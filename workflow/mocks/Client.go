@@ -1,0 +1,106 @@
+package mocks
+
+import "github.com/stretchr/testify/mock"
+
+import "github.com/3dsim/workflow-goclient/models"
+
+type Client struct {
+	mock.Mock
+}
+
+// GetWorkflow provides a mock function with given fields: workflowID
+func (_m *Client) GetWorkflow(workflowID string) (*models.Workflow, error) {
+	ret := _m.Called(workflowID)
+
+	var r0 *models.Workflow
+	if rf, ok := ret.Get(0).(func(string) *models.Workflow); ok {
+		r0 = rf(workflowID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.Workflow)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(workflowID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CancelWorkflow provides a mock function with given fields: workflowID
+func (_m *Client) CancelWorkflow(workflowID string) error {
+	ret := _m.Called(workflowID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(workflowID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SignalWorkflow provides a mock function with given fields: workflowID, signal
+func (_m *Client) SignalWorkflow(workflowID string, signal *models.Signal) error {
+	ret := _m.Called(workflowID, signal)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, *models.Signal) error); ok {
+		r0 = rf(workflowID, signal)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateActivity provides a mock function with given fields: workflowID, activity
+func (_m *Client) UpdateActivity(workflowID string, activity *models.Activity) (*models.Activity, error) {
+	ret := _m.Called(workflowID, activity)
+
+	var r0 *models.Activity
+	if rf, ok := ret.Get(0).(func(string, *models.Activity) *models.Activity); ok {
+		r0 = rf(workflowID, activity)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.Activity)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, *models.Activity) error); ok {
+		r1 = rf(workflowID, activity)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// HeartbeatActivity provides a mock function with given fields: workflowID, activityID
+func (_m *Client) HeartbeatActivity(workflowID string, activityID string) (*models.Heartbeat, error) {
+	ret := _m.Called(workflowID, activityID)
+
+	var r0 *models.Heartbeat
+	if rf, ok := ret.Get(0).(func(string, string) *models.Heartbeat); ok {
+		r0 = rf(workflowID, activityID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.Heartbeat)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(workflowID, activityID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
