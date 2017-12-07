@@ -19,3 +19,4 @@ import:
 - package: github.com/3dsim/auth0
   version: ^1.1.0
 - package: github.com/PuerkitoBio/rehttp
+- package: github.com/stretchr/objx
