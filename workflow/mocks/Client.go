@@ -8,8 +8,8 @@ type Client struct {
 	mock.Mock
 }
 
-// GetWorkflow provides a mock function with given fields: workflowID
-func (_m *Client) GetWorkflow(workflowID string) (*models.Workflow, error) {
+// Workflow provides a mock function with given fields: workflowID
+func (_m *Client) Workflow(workflowID string) (*models.Workflow, error) {
 	ret := _m.Called(workflowID)
 
 	var r0 *models.Workflow

@@ -2,14 +2,11 @@ package workflow
 
 import (
 	"errors"
-	"io/ioutil"
-	"testing"
-	// "time"
-
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	// "strconv"
+	"testing"
 
 	"github.com/3dsim/auth0/auth0fakes"
 	"github.com/3dsim/workflow-goclient/models"
@@ -33,7 +30,7 @@ func TestNewClientExpectsClientReturned(t *testing.T) {
 	assert.NotNil(t, client, "Expected new client to not be nil");
 }
 
-func TestGetWorkflow(t *testing.T) {
+func TestWorkflow(t *testing.T) {
 	// arrange
 	workflowID := "my-workflow"
 	endpoint := "/" + workflowAPIBasePath + "/workflows/{workflowID}"
@@ -67,7 +64,7 @@ func TestGetWorkflow(t *testing.T) {
 		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
 
 		// act
-		workflow, err := client.GetWorkflow(workflowID)
+		workflow, err := client.Workflow(workflowID)
 
 		// assert
 		assert.Nil(t, err, "Expected error to be nil when getting workflow")
@@ -85,7 +82,7 @@ func TestGetWorkflow(t *testing.T) {
 		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
 
 		// act
-		workflow, err := client.GetWorkflow(workflowID)
+		workflow, err := client.Workflow(workflowID)
 
 		// assert
 		assert.Nil(t, workflow, "Expected no workflow to be returned due to token error")
@@ -111,7 +108,7 @@ func TestGetWorkflow(t *testing.T) {
 		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
 
 		// act
-		workflow, err := client.GetWorkflow(workflowID)
+		workflow, err := client.Workflow(workflowID)
 
 		// assert
 		assert.Nil(t, workflow, "Expected no workflow to be returned due to API error")

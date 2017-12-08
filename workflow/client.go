@@ -34,16 +34,11 @@ func init() {
 	Log.SetHandler(log.DiscardHandler())
 }
 
-const (
-	// WorkflowAPIBasePath is the base path or "slug" for the workflow api
-	WorkflowAPIBasePath = "workflow-api"
-)
-
 // Client is a wrapper around the generated client found in the "genclient" package.  It provides convenience methods
 // for common operations.  If the operation needed is not found in Client, use the "genclient" package using this client
 // as an example of how to utilize the genclient.  PRs are welcome if more functionality is wanted in this client package.
 type Client interface {
-	GetWorkflow(workflowID string) (*models.Workflow, error)
+	Workflow(workflowID string) (*models.Workflow, error)
 	CancelWorkflow(workflowID string) error
 	SignalWorkflow(workflowID string, signal *models.Signal) error
 	UpdateActivity(workflowID string, activity *models.Activity) (*models.Activity, error)
@@ -64,8 +59,8 @@ type client struct {
 //
 // The audience's are:
 //
-// 		QA 		= https://workflow-qa.3dsim.com/v2
-//		Prod 	= https://workflow.3dsim.com/v2
+// 		QA 		= https://workflow-qa.3dsim.com
+//		Prod 	= https://workflow.3dsim.com
 // 		Gov 	= https://workflow-gov.3dsim.com
 //
 // The apiBasePath is "/workflow-api".
@@ -108,7 +103,7 @@ func newClient(tokenFetcher auth0.TokenFetcher, apiGatewayURL, apiBasePath, audi
 	}
 }
 
-func (c *client) GetWorkflow(workflowID string) (workflow *models.Workflow, err error) {
+func (c *client) Workflow(workflowID string) (workflow *models.Workflow, err error) {
 	token, err := c.tokenFetcher.Token(c.audience)
 	if err != nil {
 		return nil, err

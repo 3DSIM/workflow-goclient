@@ -9,16 +9,16 @@ import (
 )
 
 type FakeClient struct {
-	GetWorkflowStub        func(workflowID string) (*models.Workflow, error)
-	getWorkflowMutex       sync.RWMutex
-	getWorkflowArgsForCall []struct {
+	WorkflowStub        func(workflowID string) (*models.Workflow, error)
+	workflowMutex       sync.RWMutex
+	workflowArgsForCall []struct {
 		workflowID string
 	}
-	getWorkflowReturns struct {
+	workflowReturns struct {
 		result1 *models.Workflow
 		result2 error
 	}
-	getWorkflowReturnsOnCall map[int]struct {
+	workflowReturnsOnCall map[int]struct {
 		result1 *models.Workflow
 		result2 error
 	}
@@ -77,52 +77,52 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) GetWorkflow(workflowID string) (*models.Workflow, error) {
-	fake.getWorkflowMutex.Lock()
-	ret, specificReturn := fake.getWorkflowReturnsOnCall[len(fake.getWorkflowArgsForCall)]
-	fake.getWorkflowArgsForCall = append(fake.getWorkflowArgsForCall, struct {
+func (fake *FakeClient) Workflow(workflowID string) (*models.Workflow, error) {
+	fake.workflowMutex.Lock()
+	ret, specificReturn := fake.workflowReturnsOnCall[len(fake.workflowArgsForCall)]
+	fake.workflowArgsForCall = append(fake.workflowArgsForCall, struct {
 		workflowID string
 	}{workflowID})
-	fake.recordInvocation("GetWorkflow", []interface{}{workflowID})
-	fake.getWorkflowMutex.Unlock()
-	if fake.GetWorkflowStub != nil {
-		return fake.GetWorkflowStub(workflowID)
+	fake.recordInvocation("Workflow", []interface{}{workflowID})
+	fake.workflowMutex.Unlock()
+	if fake.WorkflowStub != nil {
+		return fake.WorkflowStub(workflowID)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.getWorkflowReturns.result1, fake.getWorkflowReturns.result2
+	return fake.workflowReturns.result1, fake.workflowReturns.result2
 }
 
-func (fake *FakeClient) GetWorkflowCallCount() int {
-	fake.getWorkflowMutex.RLock()
-	defer fake.getWorkflowMutex.RUnlock()
-	return len(fake.getWorkflowArgsForCall)
+func (fake *FakeClient) WorkflowCallCount() int {
+	fake.workflowMutex.RLock()
+	defer fake.workflowMutex.RUnlock()
+	return len(fake.workflowArgsForCall)
 }
 
-func (fake *FakeClient) GetWorkflowArgsForCall(i int) string {
-	fake.getWorkflowMutex.RLock()
-	defer fake.getWorkflowMutex.RUnlock()
-	return fake.getWorkflowArgsForCall[i].workflowID
+func (fake *FakeClient) WorkflowArgsForCall(i int) string {
+	fake.workflowMutex.RLock()
+	defer fake.workflowMutex.RUnlock()
+	return fake.workflowArgsForCall[i].workflowID
 }
 
-func (fake *FakeClient) GetWorkflowReturns(result1 *models.Workflow, result2 error) {
-	fake.GetWorkflowStub = nil
-	fake.getWorkflowReturns = struct {
+func (fake *FakeClient) WorkflowReturns(result1 *models.Workflow, result2 error) {
+	fake.WorkflowStub = nil
+	fake.workflowReturns = struct {
 		result1 *models.Workflow
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeClient) GetWorkflowReturnsOnCall(i int, result1 *models.Workflow, result2 error) {
-	fake.GetWorkflowStub = nil
-	if fake.getWorkflowReturnsOnCall == nil {
-		fake.getWorkflowReturnsOnCall = make(map[int]struct {
+func (fake *FakeClient) WorkflowReturnsOnCall(i int, result1 *models.Workflow, result2 error) {
+	fake.WorkflowStub = nil
+	if fake.workflowReturnsOnCall == nil {
+		fake.workflowReturnsOnCall = make(map[int]struct {
 			result1 *models.Workflow
 			result2 error
 		})
 	}
-	fake.getWorkflowReturnsOnCall[i] = struct {
+	fake.workflowReturnsOnCall[i] = struct {
 		result1 *models.Workflow
 		result2 error
 	}{result1, result2}
@@ -332,8 +332,8 @@ func (fake *FakeClient) HeartbeatActivityReturnsOnCall(i int, result1 *models.He
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.getWorkflowMutex.RLock()
-	defer fake.getWorkflowMutex.RUnlock()
+	fake.workflowMutex.RLock()
+	defer fake.workflowMutex.RUnlock()
 	fake.cancelWorkflowMutex.RLock()
 	defer fake.cancelWorkflowMutex.RUnlock()
 	fake.signalWorkflowMutex.RLock()
