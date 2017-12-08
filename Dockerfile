@@ -1,4 +1,4 @@
-FROM golang:1.7
+FROM golang:1.9
 
 ENV APPLICATION_NAME=workflow-goclient
 
