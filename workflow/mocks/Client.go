@@ -82,6 +82,98 @@ func (_m *Client) UpdateActivity(workflowID string, activity *models.Activity) (
 	return r0, r1
 }
 
+// UpdateActivityPercentComplete provides a mock function with given fields: workflowID, activityID, percentComplete
+func (_m *Client) UpdateActivityPercentComplete(workflowID string, activityID string, percentComplete int) (*models.Activity, error) {
+	ret := _m.Called(workflowID, activityID, percentComplete)
+
+	var r0 *models.Activity
+	if rf, ok := ret.Get(0).(func(string, string, int) *models.Activity); ok {
+		r0 = rf(workflowID, activityID, percentComplete)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.Activity)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, int) error); ok {
+		r1 = rf(workflowID, activityID, percentComplete)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CompleteSuccessfulActivity provides a mock function with given fields: workflowID, activityID, result
+func (_m *Client) CompleteSuccessfulActivity(workflowID string, activityID string, result interface{}) (*models.Activity, error) {
+	ret := _m.Called(workflowID, activityID, result)
+
+	var r0 *models.Activity
+	if rf, ok := ret.Get(0).(func(string, string, interface{}) *models.Activity); ok {
+		r0 = rf(workflowID, activityID, result)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.Activity)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, interface{}) error); ok {
+		r1 = rf(workflowID, activityID, result)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CompleteCancelledActivity provides a mock function with given fields: workflowID, activityID, details
+func (_m *Client) CompleteCancelledActivity(workflowID string, activityID string, details string) (*models.Activity, error) {
+	ret := _m.Called(workflowID, activityID, details)
+
+	var r0 *models.Activity
+	if rf, ok := ret.Get(0).(func(string, string, string) *models.Activity); ok {
+		r0 = rf(workflowID, activityID, details)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.Activity)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(workflowID, activityID, details)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CompleteFailedActivity provides a mock function with given fields: workflowID, activityID, reason, details
+func (_m *Client) CompleteFailedActivity(workflowID string, activityID string, reason string, details string) (*models.Activity, error) {
+	ret := _m.Called(workflowID, activityID, reason, details)
+
+	var r0 *models.Activity
+	if rf, ok := ret.Get(0).(func(string, string, string, string) *models.Activity); ok {
+		r0 = rf(workflowID, activityID, reason, details)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.Activity)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string, string) error); ok {
+		r1 = rf(workflowID, activityID, reason, details)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // HeartbeatActivity provides a mock function with given fields: workflowID, activityID
 func (_m *Client) HeartbeatActivity(workflowID string, activityID string) (*models.Heartbeat, error) {
 	ret := _m.Called(workflowID, activityID)
