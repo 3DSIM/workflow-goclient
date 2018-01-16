@@ -134,6 +134,19 @@ type FakeClient struct {
 		result1 *models.Heartbeat
 		result2 error
 	}
+	HeartbeatActivityWithTokenStub        func(taskToken string) (*models.Heartbeat, error)
+	heartbeatActivityWithTokenMutex       sync.RWMutex
+	heartbeatActivityWithTokenArgsForCall []struct {
+		taskToken string
+	}
+	heartbeatActivityWithTokenReturns struct {
+		result1 *models.Heartbeat
+		result2 error
+	}
+	heartbeatActivityWithTokenReturnsOnCall map[int]struct {
+		result1 *models.Heartbeat
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -603,6 +616,57 @@ func (fake *FakeClient) HeartbeatActivityReturnsOnCall(i int, result1 *models.He
 	}{result1, result2}
 }
 
+func (fake *FakeClient) HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error) {
+	fake.heartbeatActivityWithTokenMutex.Lock()
+	ret, specificReturn := fake.heartbeatActivityWithTokenReturnsOnCall[len(fake.heartbeatActivityWithTokenArgsForCall)]
+	fake.heartbeatActivityWithTokenArgsForCall = append(fake.heartbeatActivityWithTokenArgsForCall, struct {
+		taskToken string
+	}{taskToken})
+	fake.recordInvocation("HeartbeatActivityWithToken", []interface{}{taskToken})
+	fake.heartbeatActivityWithTokenMutex.Unlock()
+	if fake.HeartbeatActivityWithTokenStub != nil {
+		return fake.HeartbeatActivityWithTokenStub(taskToken)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.heartbeatActivityWithTokenReturns.result1, fake.heartbeatActivityWithTokenReturns.result2
+}
+
+func (fake *FakeClient) HeartbeatActivityWithTokenCallCount() int {
+	fake.heartbeatActivityWithTokenMutex.RLock()
+	defer fake.heartbeatActivityWithTokenMutex.RUnlock()
+	return len(fake.heartbeatActivityWithTokenArgsForCall)
+}
+
+func (fake *FakeClient) HeartbeatActivityWithTokenArgsForCall(i int) string {
+	fake.heartbeatActivityWithTokenMutex.RLock()
+	defer fake.heartbeatActivityWithTokenMutex.RUnlock()
+	return fake.heartbeatActivityWithTokenArgsForCall[i].taskToken
+}
+
+func (fake *FakeClient) HeartbeatActivityWithTokenReturns(result1 *models.Heartbeat, result2 error) {
+	fake.HeartbeatActivityWithTokenStub = nil
+	fake.heartbeatActivityWithTokenReturns = struct {
+		result1 *models.Heartbeat
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) HeartbeatActivityWithTokenReturnsOnCall(i int, result1 *models.Heartbeat, result2 error) {
+	fake.HeartbeatActivityWithTokenStub = nil
+	if fake.heartbeatActivityWithTokenReturnsOnCall == nil {
+		fake.heartbeatActivityWithTokenReturnsOnCall = make(map[int]struct {
+			result1 *models.Heartbeat
+			result2 error
+		})
+	}
+	fake.heartbeatActivityWithTokenReturnsOnCall[i] = struct {
+		result1 *models.Heartbeat
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -624,6 +688,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.completeFailedActivityMutex.RUnlock()
 	fake.heartbeatActivityMutex.RLock()
 	defer fake.heartbeatActivityMutex.RUnlock()
+	fake.heartbeatActivityWithTokenMutex.RLock()
+	defer fake.heartbeatActivityWithTokenMutex.RUnlock()
 	return fake.invocations
 }
 

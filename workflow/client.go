@@ -4,6 +4,7 @@ package workflow
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -45,6 +46,7 @@ type Client interface {
 	CompleteCancelledActivity(workflowID, activityID, details string) (*models.Activity, error)
 	CompleteFailedActivity(workflowID, activityID, reason, details string) (*models.Activity, error)
 	HeartbeatActivity(workflowID string, activityID string) (*models.Heartbeat, error)
+	HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error)
 }
 
 type client struct {
@@ -245,4 +247,18 @@ func (c *client) HeartbeatActivity(workflowID string, activityID string) (*model
 		return nil, err
 	}
 	return response.Payload, nil
+}
+
+func (c *client) HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error) {
+	// TODO
+	// token, err := c.tokenFetcher.Token(c.audience)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// params := operations.NewHeartbeatActivityParams().WithID(workflowID).WithActivityID(activityID)
+	// response, err := c.client.Operations.HeartbeatActivity(params, openapiclient.BearerToken(token))
+	// if err != nil {
+	// 	return nil, err
+	// }
+	return nil, errors.New("Not implemented")
 }
