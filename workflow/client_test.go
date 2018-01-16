@@ -1,8 +1,8 @@
 package workflow
 
 import (
-	"errors"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	gatewayURL = "apiGatewayURL"
+	gatewayURL          = "apiGatewayURL"
 	workflowAPIBasePath = "workflow-api"
-	audience = "test audience"
+	audience            = "test audience"
 )
 
 func TestNewClientExpectsClientReturned(t *testing.T) {
@@ -27,7 +27,7 @@ func TestNewClientExpectsClientReturned(t *testing.T) {
 	client := NewClient(nil, gatewayURL, workflowAPIBasePath, audience)
 
 	// assert
-	assert.NotNil(t, client, "Expected new client to not be nil");
+	assert.NotNil(t, client, "Expected new client to not be nil")
 }
 
 func TestWorkflow(t *testing.T) {
@@ -40,8 +40,8 @@ func TestWorkflow(t *testing.T) {
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("token", nil)
 		workflowToReturn := &models.Workflow{
-			ID:   workflowID,
-			State: "Running",
+			ID:                workflowID,
+			State:             "Running",
 			WaitingOnCapacity: false,
 		}
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -196,9 +196,9 @@ func TestSignalWorkflow(t *testing.T) {
 		// arrange
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("token", nil)
-		signal := &models.Signal {
-			Name : swag.String("SignalName"),
-			Input : "inputjson",
+		signal := &models.Signal{
+			Name:  swag.String("SignalName"),
+			Input: "inputjson",
 		}
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -276,13 +276,13 @@ func TestUpdateActivity(t *testing.T) {
 	workflowID := "my-workflow"
 	activityID := "my-activity"
 	endpoint := "/" + workflowAPIBasePath + "/workflows/{workflowID}/activities/{activityID}"
-	activityToReturn := &models.Activity {
-		ID:   swag.String(activityID),
-		Status: swag.String("Completed"),
+	activityToReturn := &models.Activity{
+		ID:              swag.String(activityID),
+		Status:          swag.String("Completed"),
 		PercentComplete: 100,
-		Result: "json-string",
-		Error: &models.ActivityError {
-			Reason : swag.String("reason"),
+		Result:          "json-string",
+		Error: &models.ActivityError{
+			Reason:  swag.String("reason"),
 			Details: "details",
 		},
 	}
@@ -369,6 +369,414 @@ func TestUpdateActivity(t *testing.T) {
 	})
 }
 
+func TestUpdateActivityPercentComplete(t *testing.T) {
+	// arrange
+	workflowID := "my-workflow"
+	activityID := "my-activity"
+	endpoint := "/" + workflowAPIBasePath + "/workflows/{workflowID}/activities/{activityID}"
+
+	t.Run("WhenSuccessfulExpectsUpdatedActivityInRequest", func(t *testing.T) {
+		// arrange
+		expectedActivity := &models.Activity{
+			ID:              swag.String(activityID),
+			Status:          swag.String(models.ActivityStatusRunning),
+			PercentComplete: 32,
+		}
+		var actualActivity models.Activity
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("token", nil)
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			assert.NotEmpty(t, r.Header.Get("Authorization"), "Authorization header should not be empty")
+			receivedWorkflowID := mux.Vars(r)["workflowID"]
+			receivedActivityID := mux.Vars(r)["activityID"]
+			assert.EqualValues(t, workflowID, receivedWorkflowID, "Expected workflow id received to match what was passed in")
+			assert.EqualValues(t, activityID, receivedActivityID, "Expected activity id received to match what was passed in")
+			bodyBytes, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = json.Unmarshal(bodyBytes, &actualActivity)
+			if err != nil {
+				t.Fatal(err)
+			}
+			bytes, err := json.Marshal(&models.Activity{})
+			if err != nil {
+				t.Fatal("Failed to marshal activity " + err.Error())
+			}
+			w.Write(bytes)
+		})
+
+		// Setup routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.UpdateActivityPercentComplete(workflowID, activityID, int(expectedActivity.PercentComplete))
+
+		// assert
+		assert.Equal(t, *expectedActivity.ID, *actualActivity.ID, "Expected activity IDs to match")
+		assert.Equal(t, models.ActivityStatusRunning, *actualActivity.Status, "Expected activity status to be: "+models.ActivityStatusRunning)
+		assert.EqualValues(t, expectedActivity.PercentComplete, actualActivity.PercentComplete, "Expected percent complete to match what was passed in")
+		assert.Nil(t, err, "Expected no error")
+		assert.Nil(t, actualActivity.Error, "Expected no activity error")
+		assert.NotNil(t, activity, "Expected retrieved activity to not be nil")
+	})
+
+	t.Run("WhenFetcherErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		expectedError := errors.New("Some auth0 error")
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("", expectedError)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.UpdateActivityPercentComplete(workflowID, activityID, 0)
+
+		// assert
+		assert.Nil(t, activity, "Expected no activity to be returned due to token error")
+		assert.Equal(t, expectedError, err, "Expected an error returned")
+
+	})
+
+	t.Run("WhenAPIErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("Token", nil)
+
+		// return server error from http handler
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(500)
+		})
+
+		// set up routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.UpdateActivityPercentComplete(workflowID, activityID, 0)
+
+		// assert
+		assert.Nil(t, activity, "Expected no activity to be returned due to API error")
+		assert.NotNil(t, err, "Expected an error returned because workflow API sent a 500 error")
+	})
+}
+
+func TestCompleteSuccessfulActivity(t *testing.T) {
+	// arrange
+	workflowID := "my-workflow"
+	activityID := "my-activity"
+	endpoint := "/" + workflowAPIBasePath + "/workflows/{workflowID}/activities/{activityID}"
+
+	t.Run("WhenSuccessfulExpectsCompletedActivityInRequest", func(t *testing.T) {
+		// arrange
+		result := struct{ Foo string }{Foo: "Bar"}
+		resultBytes, err := json.Marshal(result)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expectedActivity := &models.Activity{
+			ID:              swag.String(activityID),
+			Status:          swag.String(models.ActivityStatusCompleted),
+			PercentComplete: 100,
+			Result:          string(resultBytes),
+		}
+		var actualActivity models.Activity
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("token", nil)
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			assert.NotEmpty(t, r.Header.Get("Authorization"), "Authorization header should not be empty")
+			receivedWorkflowID := mux.Vars(r)["workflowID"]
+			receivedActivityID := mux.Vars(r)["activityID"]
+			assert.EqualValues(t, workflowID, receivedWorkflowID, "Expected workflow id received to match what was passed in")
+			assert.EqualValues(t, activityID, receivedActivityID, "Expected activity id received to match what was passed in")
+			bodyBytes, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = json.Unmarshal(bodyBytes, &actualActivity)
+			if err != nil {
+				t.Fatal(err)
+			}
+			bytes, err := json.Marshal(&models.Activity{})
+			if err != nil {
+				t.Fatal("Failed to marshal activity " + err.Error())
+			}
+			w.Write(bytes)
+		})
+
+		// Setup routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.CompleteSuccessfulActivity(workflowID, activityID, result)
+
+		// assert
+		assert.Equal(t, *expectedActivity.ID, *actualActivity.ID, "Expected activity IDs to match")
+		assert.Equal(t, models.ActivityStatusCompleted, *actualActivity.Status, "Expected activity status to be: "+models.ActivityStatusCompleted)
+		assert.Equal(t, expectedActivity.Result, actualActivity.Result, "Expected activity result to match")
+		assert.EqualValues(t, 100, actualActivity.PercentComplete, "Expected percent complete to be 100")
+		assert.Nil(t, err, "Expected no error")
+		assert.Nil(t, actualActivity.Error, "Expected no activity error")
+		assert.NotNil(t, activity, "Expected retrieved activity to not be nil")
+	})
+
+	t.Run("WhenFetcherErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		expectedError := errors.New("Some auth0 error")
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("", expectedError)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.CompleteSuccessfulActivity(workflowID, activityID, nil)
+
+		// assert
+		assert.Nil(t, activity, "Expected no activity to be returned due to token error")
+		assert.Equal(t, expectedError, err, "Expected an error returned")
+
+	})
+
+	t.Run("WhenAPIErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("Token", nil)
+
+		// return server error from http handler
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(500)
+		})
+
+		// set up routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.CompleteSuccessfulActivity(workflowID, activityID, nil)
+
+		// assert
+		assert.Nil(t, activity, "Expected no activity to be returned due to API error")
+		assert.NotNil(t, err, "Expected an error returned because workflow API sent a 500 error")
+	})
+}
+
+func TestCompleteCancelledActivity(t *testing.T) {
+	// arrange
+	workflowID := "my-workflow"
+	activityID := "my-activity"
+	endpoint := "/" + workflowAPIBasePath + "/workflows/{workflowID}/activities/{activityID}"
+
+	t.Run("WhenSuccessfulExpectsCancelledActivityInRequest", func(t *testing.T) {
+		// arrange
+		expectedActivity := &models.Activity{
+			ID:     swag.String(activityID),
+			Status: swag.String(models.ActivityStatusCancelled),
+			Error:  &models.ActivityError{Details: "some cancel details"},
+		}
+		var actualActivity models.Activity
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("token", nil)
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			assert.NotEmpty(t, r.Header.Get("Authorization"), "Authorization header should not be empty")
+			receivedWorkflowID := mux.Vars(r)["workflowID"]
+			receivedActivityID := mux.Vars(r)["activityID"]
+			assert.EqualValues(t, workflowID, receivedWorkflowID, "Expected workflow id received to match what was passed in")
+			assert.EqualValues(t, activityID, receivedActivityID, "Expected activity id received to match what was passed in")
+			bodyBytes, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = json.Unmarshal(bodyBytes, &actualActivity)
+			if err != nil {
+				t.Fatal(err)
+			}
+			bytes, err := json.Marshal(&models.Activity{})
+			if err != nil {
+				t.Fatal("Failed to marshal activity " + err.Error())
+			}
+			w.Write(bytes)
+		})
+
+		// Setup routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.CompleteCancelledActivity(workflowID, activityID, expectedActivity.Error.Details)
+
+		// assert
+		assert.Equal(t, *expectedActivity.ID, *actualActivity.ID, "Expected activity IDs to match")
+		assert.Equal(t, models.ActivityStatusCancelled, *actualActivity.Status, "Expected activity status to be: "+models.ActivityStatusCancelled)
+		assert.NotNil(t, actualActivity.Error, "Expected an activity error")
+		assert.Equal(t, expectedActivity.Error.Details, actualActivity.Error.Details, "Expected error details to be passed in")
+		assert.Nil(t, err, "Expected no error")
+		assert.NotNil(t, activity, "Expected retrieved activity to not be nil")
+	})
+
+	t.Run("WhenFetcherErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		expectedError := errors.New("Some auth0 error")
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("", expectedError)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.CompleteCancelledActivity(workflowID, activityID, "")
+
+		// assert
+		assert.Nil(t, activity, "Expected no activity to be returned due to token error")
+		assert.Equal(t, expectedError, err, "Expected an error returned")
+
+	})
+
+	t.Run("WhenAPIErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("Token", nil)
+
+		// return server error from http handler
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(500)
+		})
+
+		// set up routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.CompleteCancelledActivity(workflowID, activityID, "")
+
+		// assert
+		assert.Nil(t, activity, "Expected no activity to be returned due to API error")
+		assert.NotNil(t, err, "Expected an error returned because workflow API sent a 500 error")
+	})
+}
+
+func TestCompleteFailedActivity(t *testing.T) {
+	// arrange
+	workflowID := "my-workflow"
+	activityID := "my-activity"
+	endpoint := "/" + workflowAPIBasePath + "/workflows/{workflowID}/activities/{activityID}"
+
+	t.Run("WhenSuccessfulExpectsFailedActivityInRequest", func(t *testing.T) {
+		// arrange
+		expectedActivity := &models.Activity{
+			ID:     swag.String(activityID),
+			Status: swag.String(models.ActivityStatusFailed),
+			Error:  &models.ActivityError{Reason: swag.String("some reason"), Details: "some failure details"},
+		}
+		var actualActivity models.Activity
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("token", nil)
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			assert.NotEmpty(t, r.Header.Get("Authorization"), "Authorization header should not be empty")
+			receivedWorkflowID := mux.Vars(r)["workflowID"]
+			receivedActivityID := mux.Vars(r)["activityID"]
+			assert.EqualValues(t, workflowID, receivedWorkflowID, "Expected workflow id received to match what was passed in")
+			assert.EqualValues(t, activityID, receivedActivityID, "Expected activity id received to match what was passed in")
+			bodyBytes, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = json.Unmarshal(bodyBytes, &actualActivity)
+			if err != nil {
+				t.Fatal(err)
+			}
+			bytes, err := json.Marshal(&models.Activity{})
+			if err != nil {
+				t.Fatal("Failed to marshal activity " + err.Error())
+			}
+			w.Write(bytes)
+		})
+
+		// Setup routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.CompleteFailedActivity(workflowID, activityID, *expectedActivity.Error.Reason, expectedActivity.Error.Details)
+
+		// assert
+		assert.Equal(t, *expectedActivity.ID, *actualActivity.ID, "Expected activity IDs to match")
+		assert.Equal(t, models.ActivityStatusFailed, *actualActivity.Status, "Expected activity status to be: "+models.ActivityStatusCancelled)
+		assert.NotNil(t, actualActivity.Error, "Expected an activity error")
+		assert.Equal(t, *expectedActivity.Error.Reason, *actualActivity.Error.Reason, "Expected error reason to be passed in")
+		assert.Equal(t, expectedActivity.Error.Details, actualActivity.Error.Details, "Expected error details to be passed in")
+		assert.Nil(t, err, "Expected no error")
+		assert.NotNil(t, activity, "Expected retrieved activity to not be nil")
+	})
+
+	t.Run("WhenFetcherErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		expectedError := errors.New("Some auth0 error")
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("", expectedError)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.CompleteFailedActivity(workflowID, activityID, "", "")
+
+		// assert
+		assert.Nil(t, activity, "Expected no activity to be returned due to token error")
+		assert.Equal(t, expectedError, err, "Expected an error returned")
+
+	})
+
+	t.Run("WhenAPIErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("Token", nil)
+
+		// return server error from http handler
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(500)
+		})
+
+		// set up routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		activity, err := client.CompleteFailedActivity(workflowID, activityID, "", "")
+
+		// assert
+		assert.Nil(t, activity, "Expected no activity to be returned due to API error")
+		assert.NotNil(t, err, "Expected an error returned because workflow API sent a 500 error")
+	})
+}
+
 func TestHeartbeatActivity(t *testing.T) {
 	// arrange
 	workflowID := "my-workflow"
@@ -378,9 +786,9 @@ func TestHeartbeatActivity(t *testing.T) {
 	endpoint := "/" + workflowAPIBasePath + "/workflows/{workflowID}/activities/{activityID}/heartbeat"
 	heartbeatToReturn := &models.Heartbeat{
 		ActivityID: swag.String(activityID),
-		TaskToken: swag.String(taskToken),
-		Cancelled: false,
-		Details: heartbeatDetails,
+		TaskToken:  swag.String(taskToken),
+		Cancelled:  false,
+		Details:    heartbeatDetails,
 	}
 
 	t.Run("WhenSuccessfulExpectsHeartbeatReturned", func(t *testing.T) {

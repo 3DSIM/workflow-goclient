@@ -3,9 +3,8 @@
 package workflow
 
 import (
-	// "encoding/json"
-	// "errors"
-	// "fmt"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -17,7 +16,7 @@ import (
 	"github.com/PuerkitoBio/rehttp"
 	openapiclient "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
-	// "github.com/go-openapi/swag"
+	"github.com/go-openapi/swag"
 	log "github.com/inconshreveable/log15"
 )
 
@@ -42,7 +41,12 @@ type Client interface {
 	CancelWorkflow(workflowID string) error
 	SignalWorkflow(workflowID string, signal *models.Signal) error
 	UpdateActivity(workflowID string, activity *models.Activity) (*models.Activity, error)
+	UpdateActivityPercentComplete(workflowID, activityID string, percentComplete int) (*models.Activity, error)
+	CompleteSuccessfulActivity(workflowID, activityID string, result interface{}) (*models.Activity, error)
+	CompleteCancelledActivity(workflowID, activityID, details string) (*models.Activity, error)
+	CompleteFailedActivity(workflowID, activityID, reason, details string) (*models.Activity, error)
 	HeartbeatActivity(workflowID string, activityID string) (*models.Heartbeat, error)
+	HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error)
 }
 
 type client struct {
@@ -155,6 +159,83 @@ func (c *client) UpdateActivity(workflowID string, activity *models.Activity) (*
 	return response.Payload, nil
 }
 
+func (c *client) UpdateActivityPercentComplete(workflowID, activityID string, percentComplete int) (*models.Activity, error) {
+	token, err := c.tokenFetcher.Token(c.audience)
+	if err != nil {
+		return nil, err
+	}
+	updatedActivity := &models.Activity{
+		ID:              swag.String(activityID),
+		Status:          swag.String(models.ActivityStatusRunning),
+		PercentComplete: int32(percentComplete),
+	}
+	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(activityID).WithActivity(updatedActivity)
+	response, err := c.client.Operations.UpdateActivity(params, openapiclient.BearerToken(token))
+	if err != nil {
+		return nil, err
+	}
+	return response.Payload, nil
+}
+
+func (c *client) CompleteSuccessfulActivity(workflowID, activityID string, result interface{}) (*models.Activity, error) {
+	token, err := c.tokenFetcher.Token(c.audience)
+	if err != nil {
+		return nil, err
+	}
+	resultBytes, err := json.Marshal(result)
+	if err != nil {
+		return nil, err
+	}
+	completedActivity := &models.Activity{
+		ID:              swag.String(activityID),
+		Status:          swag.String(models.ActivityStatusCompleted),
+		Result:          string(resultBytes),
+		PercentComplete: 100,
+	}
+	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(activityID).WithActivity(completedActivity)
+	response, err := c.client.Operations.UpdateActivity(params, openapiclient.BearerToken(token))
+	if err != nil {
+		return nil, err
+	}
+	return response.Payload, nil
+}
+
+func (c *client) CompleteCancelledActivity(workflowID, activityID, details string) (*models.Activity, error) {
+	token, err := c.tokenFetcher.Token(c.audience)
+	if err != nil {
+		return nil, err
+	}
+	cancelledActivity := &models.Activity{
+		ID:     swag.String(activityID),
+		Status: swag.String(models.ActivityStatusCancelled),
+		Error:  &models.ActivityError{Details: details},
+	}
+	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(activityID).WithActivity(cancelledActivity)
+	response, err := c.client.Operations.UpdateActivity(params, openapiclient.BearerToken(token))
+	if err != nil {
+		return nil, err
+	}
+	return response.Payload, nil
+}
+
+func (c *client) CompleteFailedActivity(workflowID, activityID, reason, details string) (*models.Activity, error) {
+	token, err := c.tokenFetcher.Token(c.audience)
+	if err != nil {
+		return nil, err
+	}
+	failedActivity := &models.Activity{
+		ID:     swag.String(activityID),
+		Status: swag.String(models.ActivityStatusFailed),
+		Error:  &models.ActivityError{Reason: swag.String(reason), Details: details},
+	}
+	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(activityID).WithActivity(failedActivity)
+	response, err := c.client.Operations.UpdateActivity(params, openapiclient.BearerToken(token))
+	if err != nil {
+		return nil, err
+	}
+	return response.Payload, nil
+}
+
 func (c *client) HeartbeatActivity(workflowID string, activityID string) (*models.Heartbeat, error) {
 	token, err := c.tokenFetcher.Token(c.audience)
 	if err != nil {
@@ -166,4 +247,18 @@ func (c *client) HeartbeatActivity(workflowID string, activityID string) (*model
 		return nil, err
 	}
 	return response.Payload, nil
+}
+
+func (c *client) HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error) {
+	// TODO
+	// token, err := c.tokenFetcher.Token(c.audience)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// params := operations.NewHeartbeatActivityParams().WithID(workflowID).WithActivityID(activityID)
+	// response, err := c.client.Operations.HeartbeatActivity(params, openapiclient.BearerToken(token))
+	// if err != nil {
+	// 	return nil, err
+	// }
+	return nil, errors.New("Not implemented")
 }

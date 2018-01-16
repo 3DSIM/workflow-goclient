@@ -59,6 +59,67 @@ type FakeClient struct {
 		result1 *models.Activity
 		result2 error
 	}
+	UpdateActivityPercentCompleteStub        func(workflowID, activityID string, percentComplete int) (*models.Activity, error)
+	updateActivityPercentCompleteMutex       sync.RWMutex
+	updateActivityPercentCompleteArgsForCall []struct {
+		workflowID      string
+		activityID      string
+		percentComplete int
+	}
+	updateActivityPercentCompleteReturns struct {
+		result1 *models.Activity
+		result2 error
+	}
+	updateActivityPercentCompleteReturnsOnCall map[int]struct {
+		result1 *models.Activity
+		result2 error
+	}
+	CompleteSuccessfulActivityStub        func(workflowID, activityID string, result interface{}) (*models.Activity, error)
+	completeSuccessfulActivityMutex       sync.RWMutex
+	completeSuccessfulActivityArgsForCall []struct {
+		workflowID string
+		activityID string
+		result     interface{}
+	}
+	completeSuccessfulActivityReturns struct {
+		result1 *models.Activity
+		result2 error
+	}
+	completeSuccessfulActivityReturnsOnCall map[int]struct {
+		result1 *models.Activity
+		result2 error
+	}
+	CompleteCancelledActivityStub        func(workflowID, activityID, details string) (*models.Activity, error)
+	completeCancelledActivityMutex       sync.RWMutex
+	completeCancelledActivityArgsForCall []struct {
+		workflowID string
+		activityID string
+		details    string
+	}
+	completeCancelledActivityReturns struct {
+		result1 *models.Activity
+		result2 error
+	}
+	completeCancelledActivityReturnsOnCall map[int]struct {
+		result1 *models.Activity
+		result2 error
+	}
+	CompleteFailedActivityStub        func(workflowID, activityID, reason, details string) (*models.Activity, error)
+	completeFailedActivityMutex       sync.RWMutex
+	completeFailedActivityArgsForCall []struct {
+		workflowID string
+		activityID string
+		reason     string
+		details    string
+	}
+	completeFailedActivityReturns struct {
+		result1 *models.Activity
+		result2 error
+	}
+	completeFailedActivityReturnsOnCall map[int]struct {
+		result1 *models.Activity
+		result2 error
+	}
 	HeartbeatActivityStub        func(workflowID string, activityID string) (*models.Heartbeat, error)
 	heartbeatActivityMutex       sync.RWMutex
 	heartbeatActivityArgsForCall []struct {
@@ -70,6 +131,19 @@ type FakeClient struct {
 		result2 error
 	}
 	heartbeatActivityReturnsOnCall map[int]struct {
+		result1 *models.Heartbeat
+		result2 error
+	}
+	HeartbeatActivityWithTokenStub        func(taskToken string) (*models.Heartbeat, error)
+	heartbeatActivityWithTokenMutex       sync.RWMutex
+	heartbeatActivityWithTokenArgsForCall []struct {
+		taskToken string
+	}
+	heartbeatActivityWithTokenReturns struct {
+		result1 *models.Heartbeat
+		result2 error
+	}
+	heartbeatActivityWithTokenReturnsOnCall map[int]struct {
 		result1 *models.Heartbeat
 		result2 error
 	}
@@ -277,6 +351,219 @@ func (fake *FakeClient) UpdateActivityReturnsOnCall(i int, result1 *models.Activ
 	}{result1, result2}
 }
 
+func (fake *FakeClient) UpdateActivityPercentComplete(workflowID string, activityID string, percentComplete int) (*models.Activity, error) {
+	fake.updateActivityPercentCompleteMutex.Lock()
+	ret, specificReturn := fake.updateActivityPercentCompleteReturnsOnCall[len(fake.updateActivityPercentCompleteArgsForCall)]
+	fake.updateActivityPercentCompleteArgsForCall = append(fake.updateActivityPercentCompleteArgsForCall, struct {
+		workflowID      string
+		activityID      string
+		percentComplete int
+	}{workflowID, activityID, percentComplete})
+	fake.recordInvocation("UpdateActivityPercentComplete", []interface{}{workflowID, activityID, percentComplete})
+	fake.updateActivityPercentCompleteMutex.Unlock()
+	if fake.UpdateActivityPercentCompleteStub != nil {
+		return fake.UpdateActivityPercentCompleteStub(workflowID, activityID, percentComplete)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.updateActivityPercentCompleteReturns.result1, fake.updateActivityPercentCompleteReturns.result2
+}
+
+func (fake *FakeClient) UpdateActivityPercentCompleteCallCount() int {
+	fake.updateActivityPercentCompleteMutex.RLock()
+	defer fake.updateActivityPercentCompleteMutex.RUnlock()
+	return len(fake.updateActivityPercentCompleteArgsForCall)
+}
+
+func (fake *FakeClient) UpdateActivityPercentCompleteArgsForCall(i int) (string, string, int) {
+	fake.updateActivityPercentCompleteMutex.RLock()
+	defer fake.updateActivityPercentCompleteMutex.RUnlock()
+	return fake.updateActivityPercentCompleteArgsForCall[i].workflowID, fake.updateActivityPercentCompleteArgsForCall[i].activityID, fake.updateActivityPercentCompleteArgsForCall[i].percentComplete
+}
+
+func (fake *FakeClient) UpdateActivityPercentCompleteReturns(result1 *models.Activity, result2 error) {
+	fake.UpdateActivityPercentCompleteStub = nil
+	fake.updateActivityPercentCompleteReturns = struct {
+		result1 *models.Activity
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) UpdateActivityPercentCompleteReturnsOnCall(i int, result1 *models.Activity, result2 error) {
+	fake.UpdateActivityPercentCompleteStub = nil
+	if fake.updateActivityPercentCompleteReturnsOnCall == nil {
+		fake.updateActivityPercentCompleteReturnsOnCall = make(map[int]struct {
+			result1 *models.Activity
+			result2 error
+		})
+	}
+	fake.updateActivityPercentCompleteReturnsOnCall[i] = struct {
+		result1 *models.Activity
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) CompleteSuccessfulActivity(workflowID string, activityID string, result interface{}) (*models.Activity, error) {
+	fake.completeSuccessfulActivityMutex.Lock()
+	ret, specificReturn := fake.completeSuccessfulActivityReturnsOnCall[len(fake.completeSuccessfulActivityArgsForCall)]
+	fake.completeSuccessfulActivityArgsForCall = append(fake.completeSuccessfulActivityArgsForCall, struct {
+		workflowID string
+		activityID string
+		result     interface{}
+	}{workflowID, activityID, result})
+	fake.recordInvocation("CompleteSuccessfulActivity", []interface{}{workflowID, activityID, result})
+	fake.completeSuccessfulActivityMutex.Unlock()
+	if fake.CompleteSuccessfulActivityStub != nil {
+		return fake.CompleteSuccessfulActivityStub(workflowID, activityID, result)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.completeSuccessfulActivityReturns.result1, fake.completeSuccessfulActivityReturns.result2
+}
+
+func (fake *FakeClient) CompleteSuccessfulActivityCallCount() int {
+	fake.completeSuccessfulActivityMutex.RLock()
+	defer fake.completeSuccessfulActivityMutex.RUnlock()
+	return len(fake.completeSuccessfulActivityArgsForCall)
+}
+
+func (fake *FakeClient) CompleteSuccessfulActivityArgsForCall(i int) (string, string, interface{}) {
+	fake.completeSuccessfulActivityMutex.RLock()
+	defer fake.completeSuccessfulActivityMutex.RUnlock()
+	return fake.completeSuccessfulActivityArgsForCall[i].workflowID, fake.completeSuccessfulActivityArgsForCall[i].activityID, fake.completeSuccessfulActivityArgsForCall[i].result
+}
+
+func (fake *FakeClient) CompleteSuccessfulActivityReturns(result1 *models.Activity, result2 error) {
+	fake.CompleteSuccessfulActivityStub = nil
+	fake.completeSuccessfulActivityReturns = struct {
+		result1 *models.Activity
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) CompleteSuccessfulActivityReturnsOnCall(i int, result1 *models.Activity, result2 error) {
+	fake.CompleteSuccessfulActivityStub = nil
+	if fake.completeSuccessfulActivityReturnsOnCall == nil {
+		fake.completeSuccessfulActivityReturnsOnCall = make(map[int]struct {
+			result1 *models.Activity
+			result2 error
+		})
+	}
+	fake.completeSuccessfulActivityReturnsOnCall[i] = struct {
+		result1 *models.Activity
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) CompleteCancelledActivity(workflowID string, activityID string, details string) (*models.Activity, error) {
+	fake.completeCancelledActivityMutex.Lock()
+	ret, specificReturn := fake.completeCancelledActivityReturnsOnCall[len(fake.completeCancelledActivityArgsForCall)]
+	fake.completeCancelledActivityArgsForCall = append(fake.completeCancelledActivityArgsForCall, struct {
+		workflowID string
+		activityID string
+		details    string
+	}{workflowID, activityID, details})
+	fake.recordInvocation("CompleteCancelledActivity", []interface{}{workflowID, activityID, details})
+	fake.completeCancelledActivityMutex.Unlock()
+	if fake.CompleteCancelledActivityStub != nil {
+		return fake.CompleteCancelledActivityStub(workflowID, activityID, details)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.completeCancelledActivityReturns.result1, fake.completeCancelledActivityReturns.result2
+}
+
+func (fake *FakeClient) CompleteCancelledActivityCallCount() int {
+	fake.completeCancelledActivityMutex.RLock()
+	defer fake.completeCancelledActivityMutex.RUnlock()
+	return len(fake.completeCancelledActivityArgsForCall)
+}
+
+func (fake *FakeClient) CompleteCancelledActivityArgsForCall(i int) (string, string, string) {
+	fake.completeCancelledActivityMutex.RLock()
+	defer fake.completeCancelledActivityMutex.RUnlock()
+	return fake.completeCancelledActivityArgsForCall[i].workflowID, fake.completeCancelledActivityArgsForCall[i].activityID, fake.completeCancelledActivityArgsForCall[i].details
+}
+
+func (fake *FakeClient) CompleteCancelledActivityReturns(result1 *models.Activity, result2 error) {
+	fake.CompleteCancelledActivityStub = nil
+	fake.completeCancelledActivityReturns = struct {
+		result1 *models.Activity
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) CompleteCancelledActivityReturnsOnCall(i int, result1 *models.Activity, result2 error) {
+	fake.CompleteCancelledActivityStub = nil
+	if fake.completeCancelledActivityReturnsOnCall == nil {
+		fake.completeCancelledActivityReturnsOnCall = make(map[int]struct {
+			result1 *models.Activity
+			result2 error
+		})
+	}
+	fake.completeCancelledActivityReturnsOnCall[i] = struct {
+		result1 *models.Activity
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) CompleteFailedActivity(workflowID string, activityID string, reason string, details string) (*models.Activity, error) {
+	fake.completeFailedActivityMutex.Lock()
+	ret, specificReturn := fake.completeFailedActivityReturnsOnCall[len(fake.completeFailedActivityArgsForCall)]
+	fake.completeFailedActivityArgsForCall = append(fake.completeFailedActivityArgsForCall, struct {
+		workflowID string
+		activityID string
+		reason     string
+		details    string
+	}{workflowID, activityID, reason, details})
+	fake.recordInvocation("CompleteFailedActivity", []interface{}{workflowID, activityID, reason, details})
+	fake.completeFailedActivityMutex.Unlock()
+	if fake.CompleteFailedActivityStub != nil {
+		return fake.CompleteFailedActivityStub(workflowID, activityID, reason, details)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.completeFailedActivityReturns.result1, fake.completeFailedActivityReturns.result2
+}
+
+func (fake *FakeClient) CompleteFailedActivityCallCount() int {
+	fake.completeFailedActivityMutex.RLock()
+	defer fake.completeFailedActivityMutex.RUnlock()
+	return len(fake.completeFailedActivityArgsForCall)
+}
+
+func (fake *FakeClient) CompleteFailedActivityArgsForCall(i int) (string, string, string, string) {
+	fake.completeFailedActivityMutex.RLock()
+	defer fake.completeFailedActivityMutex.RUnlock()
+	return fake.completeFailedActivityArgsForCall[i].workflowID, fake.completeFailedActivityArgsForCall[i].activityID, fake.completeFailedActivityArgsForCall[i].reason, fake.completeFailedActivityArgsForCall[i].details
+}
+
+func (fake *FakeClient) CompleteFailedActivityReturns(result1 *models.Activity, result2 error) {
+	fake.CompleteFailedActivityStub = nil
+	fake.completeFailedActivityReturns = struct {
+		result1 *models.Activity
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) CompleteFailedActivityReturnsOnCall(i int, result1 *models.Activity, result2 error) {
+	fake.CompleteFailedActivityStub = nil
+	if fake.completeFailedActivityReturnsOnCall == nil {
+		fake.completeFailedActivityReturnsOnCall = make(map[int]struct {
+			result1 *models.Activity
+			result2 error
+		})
+	}
+	fake.completeFailedActivityReturnsOnCall[i] = struct {
+		result1 *models.Activity
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) HeartbeatActivity(workflowID string, activityID string) (*models.Heartbeat, error) {
 	fake.heartbeatActivityMutex.Lock()
 	ret, specificReturn := fake.heartbeatActivityReturnsOnCall[len(fake.heartbeatActivityArgsForCall)]
@@ -329,6 +616,57 @@ func (fake *FakeClient) HeartbeatActivityReturnsOnCall(i int, result1 *models.He
 	}{result1, result2}
 }
 
+func (fake *FakeClient) HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error) {
+	fake.heartbeatActivityWithTokenMutex.Lock()
+	ret, specificReturn := fake.heartbeatActivityWithTokenReturnsOnCall[len(fake.heartbeatActivityWithTokenArgsForCall)]
+	fake.heartbeatActivityWithTokenArgsForCall = append(fake.heartbeatActivityWithTokenArgsForCall, struct {
+		taskToken string
+	}{taskToken})
+	fake.recordInvocation("HeartbeatActivityWithToken", []interface{}{taskToken})
+	fake.heartbeatActivityWithTokenMutex.Unlock()
+	if fake.HeartbeatActivityWithTokenStub != nil {
+		return fake.HeartbeatActivityWithTokenStub(taskToken)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.heartbeatActivityWithTokenReturns.result1, fake.heartbeatActivityWithTokenReturns.result2
+}
+
+func (fake *FakeClient) HeartbeatActivityWithTokenCallCount() int {
+	fake.heartbeatActivityWithTokenMutex.RLock()
+	defer fake.heartbeatActivityWithTokenMutex.RUnlock()
+	return len(fake.heartbeatActivityWithTokenArgsForCall)
+}
+
+func (fake *FakeClient) HeartbeatActivityWithTokenArgsForCall(i int) string {
+	fake.heartbeatActivityWithTokenMutex.RLock()
+	defer fake.heartbeatActivityWithTokenMutex.RUnlock()
+	return fake.heartbeatActivityWithTokenArgsForCall[i].taskToken
+}
+
+func (fake *FakeClient) HeartbeatActivityWithTokenReturns(result1 *models.Heartbeat, result2 error) {
+	fake.HeartbeatActivityWithTokenStub = nil
+	fake.heartbeatActivityWithTokenReturns = struct {
+		result1 *models.Heartbeat
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) HeartbeatActivityWithTokenReturnsOnCall(i int, result1 *models.Heartbeat, result2 error) {
+	fake.HeartbeatActivityWithTokenStub = nil
+	if fake.heartbeatActivityWithTokenReturnsOnCall == nil {
+		fake.heartbeatActivityWithTokenReturnsOnCall = make(map[int]struct {
+			result1 *models.Heartbeat
+			result2 error
+		})
+	}
+	fake.heartbeatActivityWithTokenReturnsOnCall[i] = struct {
+		result1 *models.Heartbeat
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -340,8 +678,18 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.signalWorkflowMutex.RUnlock()
 	fake.updateActivityMutex.RLock()
 	defer fake.updateActivityMutex.RUnlock()
+	fake.updateActivityPercentCompleteMutex.RLock()
+	defer fake.updateActivityPercentCompleteMutex.RUnlock()
+	fake.completeSuccessfulActivityMutex.RLock()
+	defer fake.completeSuccessfulActivityMutex.RUnlock()
+	fake.completeCancelledActivityMutex.RLock()
+	defer fake.completeCancelledActivityMutex.RUnlock()
+	fake.completeFailedActivityMutex.RLock()
+	defer fake.completeFailedActivityMutex.RUnlock()
 	fake.heartbeatActivityMutex.RLock()
 	defer fake.heartbeatActivityMutex.RUnlock()
+	fake.heartbeatActivityWithTokenMutex.RLock()
+	defer fake.heartbeatActivityWithTokenMutex.RUnlock()
 	return fake.invocations
 }
 
