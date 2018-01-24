@@ -8,6 +8,27 @@ type Client struct {
 	mock.Mock
 }
 
+// StartWorkflow provides a mock function with given fields: _a0
+func (_m *Client) StartWorkflow(_a0 *models.PostWorkflow) (string, error) {
+	ret := _m.Called(_a0)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(*models.PostWorkflow) string); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*models.PostWorkflow) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Workflow provides a mock function with given fields: workflowID
 func (_m *Client) Workflow(workflowID string) (*models.Workflow, error) {
 	ret := _m.Called(workflowID)
@@ -197,13 +218,13 @@ func (_m *Client) HeartbeatActivity(workflowID string, activityID string) (*mode
 	return r0, r1
 }
 
-// HeartbeatActivityWithToken provides a mock function with given fields: taskToken
-func (_m *Client) HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error) {
-	ret := _m.Called(taskToken)
+// HeartbeatActivityWithToken provides a mock function with given fields: taskToken, activityID, details
+func (_m *Client) HeartbeatActivityWithToken(taskToken string, activityID string, details string) (*models.Heartbeat, error) {
+	ret := _m.Called(taskToken, activityID, details)
 
 	var r0 *models.Heartbeat
-	if rf, ok := ret.Get(0).(func(string) *models.Heartbeat); ok {
-		r0 = rf(taskToken)
+	if rf, ok := ret.Get(0).(func(string, string, string) *models.Heartbeat); ok {
+		r0 = rf(taskToken, activityID, details)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*models.Heartbeat)
@@ -211,8 +232,8 @@ func (_m *Client) HeartbeatActivityWithToken(taskToken string) (*models.Heartbea
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(taskToken)
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(taskToken, activityID, details)
 	} else {
 		r1 = ret.Error(1)
 	}

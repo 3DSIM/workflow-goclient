@@ -868,3 +868,189 @@ func TestHeartbeatActivity(t *testing.T) {
 		assert.NotNil(t, err, "Expected an error returned because workflow API sent a 500 error")
 	})
 }
+
+func TestHeartbeatActivityWithToken(t *testing.T) {
+	// arrange
+	activityID := "my-activity"
+	taskToken := "token"
+	heartbeatDetails := "details"
+	endpoint := "/" + workflowAPIBasePath + "/heartbeats"
+	heartbeatToReturn := &models.Heartbeat{
+		ActivityID: swag.String(activityID),
+		TaskToken:  swag.String(taskToken),
+		Cancelled:  false,
+		Details:    heartbeatDetails,
+	}
+
+	t.Run("WhenSuccessfulExpectsHeartbeatReturned", func(t *testing.T) {
+		// arrange
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("token", nil)
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			assert.NotEmpty(t, r.Header.Get("Authorization"), "Authorization header should not be empty")
+			receivedBytes, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				assert.Fail(t, "Message did not include heartbeat")
+			}
+			receivedHeartbeat := &models.Heartbeat{}
+			if err := json.Unmarshal(receivedBytes, receivedHeartbeat); err != nil {
+				assert.Fail(t, "Unable to unmarshal heartbeat")
+			}
+			assert.EqualValues(t, heartbeatToReturn, receivedHeartbeat, "Expected received heartbeat to match what was passed in")
+			w.Write(receivedBytes)
+		})
+
+		// Setup routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		heartbeat, err := client.HeartbeatActivityWithToken(taskToken, activityID, heartbeatDetails)
+
+		// assert
+		assert.Nil(t, err, "Expected error to be nil when getting workflow")
+		assert.NotNil(t, heartbeat, "Expected retrieved heartbeat to not be nil")
+		assert.Equal(t, *heartbeatToReturn.ActivityID, *heartbeat.ActivityID, "Expected heartbeat activity IDs to match")
+		assert.Equal(t, *heartbeatToReturn.TaskToken, *heartbeat.TaskToken, "Expected heartbeat tokens to match")
+		assert.Equal(t, heartbeatToReturn.Cancelled, heartbeat.Cancelled, "Expected heartbeat cancelled field to match")
+		assert.Equal(t, heartbeatToReturn.Details, heartbeat.Details, "Expected heartbeat details to match")
+	})
+
+	t.Run("WhenAuthTokenFetcherErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		expectedError := errors.New("Some auth0 error")
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("", expectedError)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+
+		// act
+		heartbeat, err := client.HeartbeatActivityWithToken(taskToken, activityID, heartbeatDetails)
+
+		// assert
+		assert.Nil(t, heartbeat, "Expected no heartbeat to be returned due to token error")
+		assert.Equal(t, expectedError, err, "Expected an error returned")
+	})
+
+	t.Run("WhenAPIErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("Token", nil)
+
+		// return server error from http handler
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(500)
+		})
+
+		// set up routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		heartbeat, err := client.HeartbeatActivityWithToken(taskToken, activityID, heartbeatDetails)
+
+		// assert
+		assert.Nil(t, heartbeat, "Expected no heartbeat to be returned due to API error")
+		assert.NotNil(t, err, "Expected an error returned because workflow API sent a 500 error")
+	})
+}
+
+func TestStartWorkflow(t *testing.T) {
+	// arrange
+	entityID := int32(200)
+	orgID := int32(10)
+	workflowType := models.PostWorkflowWorkflowTypeAssumedStrain
+	workflowID := "sim-200"
+	endpoint := "/" + workflowAPIBasePath + "/workflows"
+	post := &models.PostWorkflow{
+		EntityID:                  swag.Int32(entityID),
+		OrganizationID:            swag.Int32(orgID),
+		WorkflowType:              swag.String(workflowType),
+		RunDistortionCompensation: false,
+		RunSupportOptimization:    false,
+	}
+
+	t.Run("WhenSuccessfulExpectsWorkflowIDReturned", func(t *testing.T) {
+		// arrange
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("token", nil)
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			assert.NotEmpty(t, r.Header.Get("Authorization"), "Authorization header should not be empty")
+			bodyBytes, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				assert.Fail(t, "Message body did not include workflow")
+			}
+			receivedWorkflow := &models.PostWorkflow{}
+			if err := json.Unmarshal(bodyBytes, receivedWorkflow); err != nil {
+				assert.Fail(t, "Unable to unmarshal workflow")
+			}
+			assert.EqualValues(t, post, receivedWorkflow, "Expected recieved workflow to match what was passed in")
+			workflowIDBytes, err := json.Marshal(workflowID)
+			if err != nil {
+				assert.Fail(t, "Failed to marshal workflow ID")
+			}
+			w.Write(workflowIDBytes)
+		})
+
+		// Setup routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		returnedWorkflowID, err := client.StartWorkflow(post)
+
+		// assert
+		assert.Nil(t, err, "Expected error to be nil when getting workflow")
+		assert.Equal(t, workflowID, returnedWorkflowID, "Expected returned workflow ID to match response value")
+	})
+
+	t.Run("WhenAuthTokenFetcherErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		expectedError := errors.New("Some auth0 error")
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("", expectedError)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+
+		// act
+		workflowID, err := client.StartWorkflow(post)
+
+		// assert
+		assert.Empty(t, workflowID, "Expected no workflow ID to be returned due to token error")
+		assert.Equal(t, expectedError, err, "Expected an error returned")
+	})
+
+	t.Run("WhenAPIErrorsExpectsErrorReturned", func(t *testing.T) {
+		// arrange
+		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
+		fakeTokenFetcher.TokenReturns("Token", nil)
+
+		// return server error from http handler
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(500)
+		})
+
+		// set up routes
+		r := mux.NewRouter()
+		r.HandleFunc(endpoint, handler)
+		testServer := httptest.NewServer(r)
+		defer testServer.Close()
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+
+		// act
+		workflowID, err := client.StartWorkflow(post)
+
+		// assert
+		assert.Empty(t, workflowID, "Expected no workflow ID to be returned due to api error")
+		assert.NotNil(t, err, "Expected an error returned because workflow API sent a 500 error")
+	})
+}

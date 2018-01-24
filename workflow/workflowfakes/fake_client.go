@@ -9,6 +9,19 @@ import (
 )
 
 type FakeClient struct {
+	StartWorkflowStub        func(*models.PostWorkflow) (string, error)
+	startWorkflowMutex       sync.RWMutex
+	startWorkflowArgsForCall []struct {
+		arg1 *models.PostWorkflow
+	}
+	startWorkflowReturns struct {
+		result1 string
+		result2 error
+	}
+	startWorkflowReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	WorkflowStub        func(workflowID string) (*models.Workflow, error)
 	workflowMutex       sync.RWMutex
 	workflowArgsForCall []struct {
@@ -120,7 +133,7 @@ type FakeClient struct {
 		result1 *models.Activity
 		result2 error
 	}
-	HeartbeatActivityStub        func(workflowID string, activityID string) (*models.Heartbeat, error)
+	HeartbeatActivityStub        func(workflowID, activityID string) (*models.Heartbeat, error)
 	heartbeatActivityMutex       sync.RWMutex
 	heartbeatActivityArgsForCall []struct {
 		workflowID string
@@ -134,10 +147,12 @@ type FakeClient struct {
 		result1 *models.Heartbeat
 		result2 error
 	}
-	HeartbeatActivityWithTokenStub        func(taskToken string) (*models.Heartbeat, error)
+	HeartbeatActivityWithTokenStub        func(taskToken, activityID, details string) (*models.Heartbeat, error)
 	heartbeatActivityWithTokenMutex       sync.RWMutex
 	heartbeatActivityWithTokenArgsForCall []struct {
-		taskToken string
+		taskToken  string
+		activityID string
+		details    string
 	}
 	heartbeatActivityWithTokenReturns struct {
 		result1 *models.Heartbeat
@@ -149,6 +164,57 @@ type FakeClient struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeClient) StartWorkflow(arg1 *models.PostWorkflow) (string, error) {
+	fake.startWorkflowMutex.Lock()
+	ret, specificReturn := fake.startWorkflowReturnsOnCall[len(fake.startWorkflowArgsForCall)]
+	fake.startWorkflowArgsForCall = append(fake.startWorkflowArgsForCall, struct {
+		arg1 *models.PostWorkflow
+	}{arg1})
+	fake.recordInvocation("StartWorkflow", []interface{}{arg1})
+	fake.startWorkflowMutex.Unlock()
+	if fake.StartWorkflowStub != nil {
+		return fake.StartWorkflowStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.startWorkflowReturns.result1, fake.startWorkflowReturns.result2
+}
+
+func (fake *FakeClient) StartWorkflowCallCount() int {
+	fake.startWorkflowMutex.RLock()
+	defer fake.startWorkflowMutex.RUnlock()
+	return len(fake.startWorkflowArgsForCall)
+}
+
+func (fake *FakeClient) StartWorkflowArgsForCall(i int) *models.PostWorkflow {
+	fake.startWorkflowMutex.RLock()
+	defer fake.startWorkflowMutex.RUnlock()
+	return fake.startWorkflowArgsForCall[i].arg1
+}
+
+func (fake *FakeClient) StartWorkflowReturns(result1 string, result2 error) {
+	fake.StartWorkflowStub = nil
+	fake.startWorkflowReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) StartWorkflowReturnsOnCall(i int, result1 string, result2 error) {
+	fake.StartWorkflowStub = nil
+	if fake.startWorkflowReturnsOnCall == nil {
+		fake.startWorkflowReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.startWorkflowReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeClient) Workflow(workflowID string) (*models.Workflow, error) {
@@ -616,16 +682,18 @@ func (fake *FakeClient) HeartbeatActivityReturnsOnCall(i int, result1 *models.He
 	}{result1, result2}
 }
 
-func (fake *FakeClient) HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error) {
+func (fake *FakeClient) HeartbeatActivityWithToken(taskToken string, activityID string, details string) (*models.Heartbeat, error) {
 	fake.heartbeatActivityWithTokenMutex.Lock()
 	ret, specificReturn := fake.heartbeatActivityWithTokenReturnsOnCall[len(fake.heartbeatActivityWithTokenArgsForCall)]
 	fake.heartbeatActivityWithTokenArgsForCall = append(fake.heartbeatActivityWithTokenArgsForCall, struct {
-		taskToken string
-	}{taskToken})
-	fake.recordInvocation("HeartbeatActivityWithToken", []interface{}{taskToken})
+		taskToken  string
+		activityID string
+		details    string
+	}{taskToken, activityID, details})
+	fake.recordInvocation("HeartbeatActivityWithToken", []interface{}{taskToken, activityID, details})
 	fake.heartbeatActivityWithTokenMutex.Unlock()
 	if fake.HeartbeatActivityWithTokenStub != nil {
-		return fake.HeartbeatActivityWithTokenStub(taskToken)
+		return fake.HeartbeatActivityWithTokenStub(taskToken, activityID, details)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -639,10 +707,10 @@ func (fake *FakeClient) HeartbeatActivityWithTokenCallCount() int {
 	return len(fake.heartbeatActivityWithTokenArgsForCall)
 }
 
-func (fake *FakeClient) HeartbeatActivityWithTokenArgsForCall(i int) string {
+func (fake *FakeClient) HeartbeatActivityWithTokenArgsForCall(i int) (string, string, string) {
 	fake.heartbeatActivityWithTokenMutex.RLock()
 	defer fake.heartbeatActivityWithTokenMutex.RUnlock()
-	return fake.heartbeatActivityWithTokenArgsForCall[i].taskToken
+	return fake.heartbeatActivityWithTokenArgsForCall[i].taskToken, fake.heartbeatActivityWithTokenArgsForCall[i].activityID, fake.heartbeatActivityWithTokenArgsForCall[i].details
 }
 
 func (fake *FakeClient) HeartbeatActivityWithTokenReturns(result1 *models.Heartbeat, result2 error) {
@@ -670,6 +738,8 @@ func (fake *FakeClient) HeartbeatActivityWithTokenReturnsOnCall(i int, result1 *
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.startWorkflowMutex.RLock()
+	defer fake.startWorkflowMutex.RUnlock()
 	fake.workflowMutex.RLock()
 	defer fake.workflowMutex.RUnlock()
 	fake.cancelWorkflowMutex.RLock()

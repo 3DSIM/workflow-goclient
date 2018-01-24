@@ -2,9 +2,11 @@ package activity
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"github.com/3dsim/workflow-goclient/workflow"
 	log "github.com/inconshreveable/log15"
-	"time"
 )
 
 // Log is a github.com/inconshreveable/log15.Logger.  Log is exposed so that users of this library can set
@@ -54,7 +56,7 @@ func (w *Worker) Do(ctx context.Context, workflowID, activityID, taskToken strin
 	stop := make(chan struct{})
 	childCtx, cancelFunc := context.WithCancel(ctx)
 
-	go w.heartbeat(workLog, taskToken, cancelFunc, stop)
+	go w.heartbeat(workLog, taskToken, activityID, cancelFunc, stop)
 	go w.updatePercentComplete(workflowID, activityID, workLog, pc)
 
 	go func() {
@@ -90,7 +92,7 @@ func (w *Worker) Do(ctx context.Context, workflowID, activityID, taskToken strin
 	stop <- struct{}{}
 }
 
-func (w *Worker) heartbeat(workLog log.Logger, taskToken string, cancelFunc context.CancelFunc, stop <-chan struct{}) {
+func (w *Worker) heartbeat(workLog log.Logger, taskToken, activityID string, cancelFunc context.CancelFunc, stop <-chan struct{}) {
 	heartbeatInterval := defaultHeartbeatInterval
 	if w.HeartbeatInterval > 0 {
 		heartbeatInterval = w.HeartbeatInterval
@@ -101,7 +103,8 @@ func (w *Worker) heartbeat(workLog log.Logger, taskToken string, cancelFunc cont
 		select {
 		case <-heartbeats.C:
 			workLog.Debug("Sending heartbeat")
-			hb, err := w.WorkflowClient.HeartbeatActivityWithToken(taskToken)
+			details := fmt.Sprintf("Heartbeat for activity %v", activityID)
+			hb, err := w.WorkflowClient.HeartbeatActivityWithToken(taskToken, activityID, details)
 			if err != nil {
 				workLog.Error("Problem sending heartbeat", "error", err, "taskToken", taskToken)
 			}
