@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/3dsim/auth0"
-	"github.com/3dsim/go-library/sugar"
 	"github.com/3dsim/workflow-goclient/genclient"
 	"github.com/3dsim/workflow-goclient/genclient/operations"
 	"github.com/3dsim/workflow-goclient/models"
@@ -271,8 +270,8 @@ func (c *client) HeartbeatActivityWithToken(taskToken, activityID, details strin
 		return nil, err
 	}
 	heartbeat := &models.Heartbeat{
-		TaskToken:  sugar.String(taskToken),
-		ActivityID: sugar.String(activityID),
+		TaskToken:  swag.String(taskToken),
+		ActivityID: swag.String(activityID),
 		Details:    details,
 		Cancelled:  false,
 	}
