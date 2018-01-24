@@ -72,7 +72,7 @@ func NewHeartbeatActivityOK() *HeartbeatActivityOK {
 
 /*HeartbeatActivityOK handles this case with default header values.
 
-activity heart beat acknowledged. Cancelled field in return value should be checked to determine if activity has been cancelled.
+Activity heart beat acknowledged. Cancelled field in return value should be checked to determine if activity has been cancelled.
 */
 type HeartbeatActivityOK struct {
 	Payload *models.Heartbeat

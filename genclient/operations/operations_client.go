@@ -83,6 +83,35 @@ func (a *Client) GetWorkflow(params *GetWorkflowParams, authInfo runtime.ClientA
 }
 
 /*
+Heartbeat Signal workflow that activity is still running
+*/
+func (a *Client) Heartbeat(params *HeartbeatParams, authInfo runtime.ClientAuthInfoWriter) (*HeartbeatOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewHeartbeatParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "heartbeat",
+		Method:             "PUT",
+		PathPattern:        "/heartbeats",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &HeartbeatReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*HeartbeatOK), nil
+
+}
+
+/*
 HeartbeatActivity Signal workflow that activity is still running
 */
 func (a *Client) HeartbeatActivity(params *HeartbeatActivityParams, authInfo runtime.ClientAuthInfoWriter) (*HeartbeatActivityOK, error) {
@@ -137,6 +166,35 @@ func (a *Client) SignalWorkflow(params *SignalWorkflowParams, authInfo runtime.C
 		return nil, err
 	}
 	return result.(*SignalWorkflowOK), nil
+
+}
+
+/*
+StartWorkflow Start a new workflow
+*/
+func (a *Client) StartWorkflow(params *StartWorkflowParams, authInfo runtime.ClientAuthInfoWriter) (*StartWorkflowOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewStartWorkflowParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "startWorkflow",
+		Method:             "POST",
+		PathPattern:        "/workflows",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &StartWorkflowReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*StartWorkflowOK), nil
 
 }
 

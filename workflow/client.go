@@ -4,12 +4,12 @@ package workflow
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/3dsim/auth0"
+	"github.com/3dsim/go-library/sugar"
 	"github.com/3dsim/workflow-goclient/genclient"
 	"github.com/3dsim/workflow-goclient/genclient/operations"
 	"github.com/3dsim/workflow-goclient/models"
@@ -37,6 +37,8 @@ func init() {
 // for common operations.  If the operation needed is not found in Client, use the "genclient" package using this client
 // as an example of how to utilize the genclient.  PRs are welcome if more functionality is wanted in this client package.
 type Client interface {
+	// StartWorkflow begins a new workflow and returns the workflow ID
+	StartWorkflow(*models.PostWorkflow) (string, error)
 	Workflow(workflowID string) (*models.Workflow, error)
 	CancelWorkflow(workflowID string) error
 	SignalWorkflow(workflowID string, signal *models.Signal) error
@@ -45,8 +47,8 @@ type Client interface {
 	CompleteSuccessfulActivity(workflowID, activityID string, result interface{}) (*models.Activity, error)
 	CompleteCancelledActivity(workflowID, activityID, details string) (*models.Activity, error)
 	CompleteFailedActivity(workflowID, activityID, reason, details string) (*models.Activity, error)
-	HeartbeatActivity(workflowID string, activityID string) (*models.Heartbeat, error)
-	HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error)
+	HeartbeatActivity(workflowID, activityID string) (*models.Heartbeat, error)
+	HeartbeatActivityWithToken(taskToken, activityID, details string) (*models.Heartbeat, error)
 }
 
 type client struct {
@@ -105,6 +107,20 @@ func newClient(tokenFetcher auth0.TokenFetcher, apiGatewayURL, apiBasePath, audi
 		client:       workflowClient,
 		audience:     audience,
 	}
+}
+
+// StartWorkflow creates a new workflow and returns the workflow ID
+func (c *client) StartWorkflow(workflow *models.PostWorkflow) (workflowID string, err error) {
+	token, err := c.tokenFetcher.Token(c.audience)
+	if err != nil {
+		return "", err
+	}
+	params := operations.NewStartWorkflowParams().WithWorkflow(workflow)
+	response, err := c.client.Operations.StartWorkflow(params, openapiclient.BearerToken(token))
+	if err != nil {
+		return "", err
+	}
+	return response.Payload, nil
 }
 
 func (c *client) Workflow(workflowID string) (workflow *models.Workflow, err error) {
@@ -249,16 +265,21 @@ func (c *client) HeartbeatActivity(workflowID string, activityID string) (*model
 	return response.Payload, nil
 }
 
-func (c *client) HeartbeatActivityWithToken(taskToken string) (*models.Heartbeat, error) {
-	// TODO
-	// token, err := c.tokenFetcher.Token(c.audience)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// params := operations.NewHeartbeatActivityParams().WithID(workflowID).WithActivityID(activityID)
-	// response, err := c.client.Operations.HeartbeatActivity(params, openapiclient.BearerToken(token))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	return nil, errors.New("Not implemented")
+func (c *client) HeartbeatActivityWithToken(taskToken, activityID, details string) (*models.Heartbeat, error) {
+	token, err := c.tokenFetcher.Token(c.audience)
+	if err != nil {
+		return nil, err
+	}
+	heartbeat := &models.Heartbeat{
+		TaskToken:  sugar.String(taskToken),
+		ActivityID: sugar.String(activityID),
+		Details:    details,
+		Cancelled:  false,
+	}
+	params := operations.NewHeartbeatParams().WithHeartbeat(heartbeat)
+	response, err := c.client.Operations.Heartbeat(params, openapiclient.BearerToken(token))
+	if err != nil {
+		return nil, err
+	}
+	return response.Payload, nil
 }

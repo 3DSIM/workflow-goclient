@@ -3,13 +3,14 @@ package activity
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/3dsim/workflow-goclient/models"
 	"github.com/3dsim/workflow-goclient/workflow/workflowfakes"
 	"github.com/go-openapi/swag"
 	log "github.com/inconshreveable/log15"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func init() {
@@ -78,8 +79,10 @@ func TestDoExpectsHeartbeatActivityWithTokenCalled(t *testing.T) {
 
 	// assert
 	assert.Equal(t, 1, fakeWorkflowClient.HeartbeatActivityWithTokenCallCount(), "Expected to call HeartbeatActivityWithToken once")
-	actualTaskToken := fakeWorkflowClient.HeartbeatActivityWithTokenArgsForCall(0)
+	actualTaskToken, actualActivityID, actualDetails := fakeWorkflowClient.HeartbeatActivityWithTokenArgsForCall(0)
 	assert.Equal(t, taskToken, actualTaskToken, "Expected task token passed to HeartbeatActivityWithToken")
+	assert.Equal(t, activityID, actualActivityID, "Expected activityID passed to HeartbeatActivityWithToken")
+	assert.NotEmpty(t, taskToken, actualDetails, "Expected details passed to HeartbeatActivityWithToken to not be empty")
 }
 
 func TestDoWhenCancellationRequestedExpectsCompleteCancelledActivityCalled(t *testing.T) {
@@ -91,6 +94,7 @@ func TestDoWhenCancellationRequestedExpectsCompleteCancelledActivityCalled(t *te
 	taskToken := "token"
 
 	heartbeatToReturn := &models.Heartbeat{
+		TaskToken:  swag.String(taskToken),
 		ActivityID: swag.String(activityID),
 		Cancelled:  true,
 	}
@@ -108,8 +112,10 @@ func TestDoWhenCancellationRequestedExpectsCompleteCancelledActivityCalled(t *te
 
 	// assert
 	assert.True(t, fakeWorkflowClient.HeartbeatActivityWithTokenCallCount() >= 1, "Expected to call HeartbeatActivityWithToken at least once")
-	actualTaskToken := fakeWorkflowClient.HeartbeatActivityWithTokenArgsForCall(0)
+	actualTaskToken, actualActivityID, actualDetails := fakeWorkflowClient.HeartbeatActivityWithTokenArgsForCall(0)
 	assert.Equal(t, taskToken, actualTaskToken, "Expected task token passed to HeartbeatActivityWithToken")
+	assert.Equal(t, activityID, actualActivityID, "Expected activityID passed to HeartbeatActivityWithToken")
+	assert.NotEmpty(t, taskToken, actualDetails, "Expected details passed to HeartbeatActivityWithToken to not be empty")
 	assert.Equal(t, 1, fakeWorkflowClient.CompleteCancelledActivityCallCount(), "Expected to call CompleteCancelledActivity once")
 	actualWorkflowID, actualActivityID, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
 	assert.Equal(t, workflowID, actualWorkflowID, "Expected workflow ID passed to CompleteCancelledActivity")
@@ -143,8 +149,10 @@ func TestDoWhenCancellationRequestedAndFunctionErrorsExpectsCompleteCancelledAct
 
 	// assert
 	assert.True(t, fakeWorkflowClient.HeartbeatActivityWithTokenCallCount() >= 1, "Expected to call HeartbeatActivityWithToken at least once")
-	actualTaskToken := fakeWorkflowClient.HeartbeatActivityWithTokenArgsForCall(0)
+	actualTaskToken, actualActivityID, actualDetails := fakeWorkflowClient.HeartbeatActivityWithTokenArgsForCall(0)
 	assert.Equal(t, taskToken, actualTaskToken, "Expected task token passed to HeartbeatActivityWithToken")
+	assert.Equal(t, activityID, actualActivityID, "Expected activityID passed to HeartbeatActivityWithToken")
+	assert.NotEmpty(t, taskToken, actualDetails, "Expected details passed to HeartbeatActivityWithToken to not be empty")
 	assert.Equal(t, 1, fakeWorkflowClient.CompleteCancelledActivityCallCount(), "Expected to call CompleteCancelledActivity once")
 	actualWorkflowID, actualActivityID, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
 	assert.Equal(t, workflowID, actualWorkflowID, "Expected workflow ID passed to CompleteCancelledActivity")
@@ -178,8 +186,10 @@ func TestDoWhenCancellationRequestedAndFunctionBlocksForeverExpectsCompleteCance
 
 	// assert
 	assert.True(t, fakeWorkflowClient.HeartbeatActivityWithTokenCallCount() >= 1, "Expected to call HeartbeatActivityWithToken at least once")
-	actualTaskToken := fakeWorkflowClient.HeartbeatActivityWithTokenArgsForCall(0)
+	actualTaskToken, actualActivityID, actualDetails := fakeWorkflowClient.HeartbeatActivityWithTokenArgsForCall(0)
 	assert.Equal(t, taskToken, actualTaskToken, "Expected task token passed to HeartbeatActivityWithToken")
+	assert.Equal(t, activityID, actualActivityID, "Expected activityID passed to HeartbeatActivityWithToken")
+	assert.NotEmpty(t, taskToken, actualDetails, "Expected details passed to HeartbeatActivityWithToken to not be empty")
 	assert.Equal(t, 1, fakeWorkflowClient.CompleteCancelledActivityCallCount(), "Expected to call CompleteCancelledActivity once")
 	actualWorkflowID, actualActivityID, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
 	assert.Equal(t, workflowID, actualWorkflowID, "Expected workflow ID passed to CompleteCancelledActivity")
