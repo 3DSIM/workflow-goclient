@@ -13,14 +13,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var logger log.Logger
+
 func init() {
-	Log.SetHandler(log.LvlFilterHandler(log.LvlDebug, log.CallerFileHandler(log.StdoutHandler)))
+	logger = log.New()
+	logger.SetHandler(log.LvlFilterHandler(log.LvlDebug, log.CallerFileHandler(log.StdoutHandler)))
 }
 
 func TestDoExpectsCompleteFailedActivityCalledWhenErrorOccurs(t *testing.T) {
 	// arrange
 	fakeWorkflowClient := &workflowfakes.FakeClient{}
-	worker := &Worker{WorkflowClient: fakeWorkflowClient}
+	worker := &Worker{WorkflowClient: fakeWorkflowClient, Logger: logger}
 	activityID := "activity id"
 	workflowID := "workflow id"
 	taskToken := "token"
@@ -43,7 +46,7 @@ func TestDoExpectsCompleteFailedActivityCalledWhenErrorOccurs(t *testing.T) {
 func TestDoExpectsCompleteSuccessfulActivityCalledWhenNoErrorOccurs(t *testing.T) {
 	// arrange
 	fakeWorkflowClient := &workflowfakes.FakeClient{}
-	worker := &Worker{WorkflowClient: fakeWorkflowClient}
+	worker := &Worker{WorkflowClient: fakeWorkflowClient, Logger: logger}
 	activityID := "activity id"
 	workflowID := "workflow id"
 	taskToken := "token"
@@ -65,7 +68,7 @@ func TestDoExpectsCompleteSuccessfulActivityCalledWhenNoErrorOccurs(t *testing.T
 func TestDoExpectsHeartbeatActivityWithTokenCalled(t *testing.T) {
 	// arrange
 	fakeWorkflowClient := &workflowfakes.FakeClient{}
-	worker := &Worker{WorkflowClient: fakeWorkflowClient, HeartbeatInterval: 7 * time.Millisecond}
+	worker := &Worker{WorkflowClient: fakeWorkflowClient, HeartbeatInterval: 7 * time.Millisecond, Logger: logger}
 	activityID := "activity id"
 	workflowID := "workflow id"
 	taskToken := "token"
@@ -88,7 +91,7 @@ func TestDoExpectsHeartbeatActivityWithTokenCalled(t *testing.T) {
 func TestDoWhenCancellationRequestedExpectsCompleteCancelledActivityCalled(t *testing.T) {
 	// arrange
 	fakeWorkflowClient := &workflowfakes.FakeClient{}
-	worker := &Worker{WorkflowClient: fakeWorkflowClient, HeartbeatInterval: 7 * time.Millisecond}
+	worker := &Worker{WorkflowClient: fakeWorkflowClient, HeartbeatInterval: 7 * time.Millisecond, Logger: logger}
 	activityID := "activity id"
 	workflowID := "workflow id"
 	taskToken := "token"
@@ -126,7 +129,7 @@ func TestDoWhenCancellationRequestedExpectsCompleteCancelledActivityCalled(t *te
 func TestDoWhenCancellationRequestedAndFunctionErrorsExpectsCompleteCancelledActivityCalled(t *testing.T) {
 	// arrange
 	fakeWorkflowClient := &workflowfakes.FakeClient{}
-	worker := &Worker{WorkflowClient: fakeWorkflowClient, HeartbeatInterval: 7 * time.Millisecond}
+	worker := &Worker{WorkflowClient: fakeWorkflowClient, HeartbeatInterval: 7 * time.Millisecond, Logger: logger}
 	activityID := "activity id"
 	workflowID := "workflow id"
 	taskToken := "token"
@@ -167,6 +170,7 @@ func TestDoWhenCancellationRequestedAndFunctionBlocksForeverExpectsCompleteCance
 		WorkflowClient:      fakeWorkflowClient,
 		HeartbeatInterval:   7 * time.Millisecond,
 		CancellationTimeout: 10 * time.Millisecond,
+		Logger:              logger,
 	}
 	activityID := "activity id"
 	workflowID := "workflow id"
@@ -200,7 +204,7 @@ func TestDoWhenCancellationRequestedAndFunctionBlocksForeverExpectsCompleteCance
 func TestDoExpectsUpdateActivityPercentCompleteCalledWhenProgressIsMade(t *testing.T) {
 	// arrange
 	fakeWorkflowClient := &workflowfakes.FakeClient{}
-	worker := &Worker{WorkflowClient: fakeWorkflowClient}
+	worker := &Worker{WorkflowClient: fakeWorkflowClient, Logger: logger}
 	activityID := "activity id"
 	workflowID := "workflow id"
 	taskToken := "token"
@@ -224,7 +228,7 @@ func TestDoExpectsUpdateActivityPercentCompleteCalledWhenProgressIsMade(t *testi
 func TestDoExpectsUpdateActivityPercentCompleteCalledOnceWhenSameValuesAreSentConsecutively(t *testing.T) {
 	// arrange
 	fakeWorkflowClient := &workflowfakes.FakeClient{}
-	worker := &Worker{WorkflowClient: fakeWorkflowClient}
+	worker := &Worker{WorkflowClient: fakeWorkflowClient, Logger: logger}
 	activityID := "activity id"
 	workflowID := "workflow id"
 	taskToken := "token"
