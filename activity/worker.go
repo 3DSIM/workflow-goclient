@@ -9,24 +9,11 @@ import (
 	log "github.com/inconshreveable/log15"
 )
 
-// Log is a github.com/inconshreveable/log15.Logger.  Log is exposed so that users of this library can set
-// their own log handler.  By default this Log uses the DiscardHandler, which discards log statements.
-// See: https://godoc.org/github.com/inconshreveable/log15#hdr-Library_Use
-//
-// To set a different log handler do something like this:
-//
-// 		Log.SetHandler(log.LvlFilterHandler(log.LvlInfo, log.CallerFileHandler(log.StdoutHandler)))
-var Log = log.New()
-
 const (
 	defaultHeartbeatInterval   = 1 * time.Minute
 	defaultCancellationTimeout = 1 * time.Minute
 	timeoutErrorMessage        = "Work cancelled after timeout"
 )
-
-func init() {
-	Log.SetHandler(log.DiscardHandler())
-}
 
 // Worker handles executing work and reporting status and progress to the workflow API via the WorkflowClient field.
 type Worker struct {
@@ -34,6 +21,8 @@ type Worker struct {
 	HeartbeatInterval time.Duration
 	// Time to wait for a cancellation before forcefully exiting.  If not set, default is 1 min
 	CancellationTimeout time.Duration
+	// Logger is exposed so that users of this Worker can set their own logger.  If none is set, no logs will be written.
+	Logger log.Logger
 }
 
 // WorkerFunc is a function that can be passed into Worker.Do to do work.  It should
@@ -49,7 +38,11 @@ type WorkerFunc func(ctx context.Context, percentCompleteChan chan<- int) (resul
 // the parent context and reporting the cancellation back to the workflow.  WorkflowFunc should
 // listen for context closing and cleanup/exit accordingly.
 func (w *Worker) Do(ctx context.Context, workflowID, activityID, taskToken string, f WorkerFunc) {
-	workLog := Log.New("workflowID", workflowID, "activityID", activityID)
+	if w.Logger == nil {
+		w.Logger = log.New()
+		w.Logger.SetHandler(log.DiscardHandler())
+	}
+	workLog := w.Logger.New("workflowID", workflowID, "activityID", activityID)
 	pc := make(chan int)
 	ec := make(chan error)
 	rc := make(chan interface{})
@@ -123,11 +116,14 @@ func (w *Worker) updatePercentComplete(workflowID, activityID string, workLog lo
 	lastPercentComplete := -1
 	for percentComplete := range pc {
 		if percentComplete != lastPercentComplete {
+			workLog.Info("Sending percent complete update", "percentComplete", percentComplete)
 			_, err := w.WorkflowClient.UpdateActivityPercentComplete(workflowID, activityID, percentComplete)
 			if err != nil {
 				workLog.Error("Problem updating percent complete", "error", err, "percentComplete", percentComplete)
 			}
 			lastPercentComplete = percentComplete
+		} else {
+			workLog.Debug("Not sending percent complete update because it is the same as last update", "percentComplete", percentComplete)
 		}
 	}
 }
@@ -139,17 +135,17 @@ func (w *Worker) handleCancellation(workflowID, activityID string, workLog log.L
 		cancellationTimeout = w.CancellationTimeout
 	}
 	select {
-	case err := <-ec:
+	case err := <-ec: // work completed with an error
 		_, err = w.WorkflowClient.CompleteCancelledActivity(workflowID, activityID, err.Error())
 		if err != nil {
 			workLog.Error("Problem sending completed via cancellation message", "error", err)
 		}
-	case <-rc:
+	case <-rc: // work completed
 		_, err := w.WorkflowClient.CompleteCancelledActivity(workflowID, activityID, "")
 		if err != nil {
 			workLog.Error("Problem sending completed via cancellation message", "error", err)
 		}
-	case <-time.After(cancellationTimeout):
+	case <-time.After(cancellationTimeout): // Cancellation timed out
 		_, err := w.WorkflowClient.CompleteCancelledActivity(workflowID, activityID, timeoutErrorMessage)
 		if err != nil {
 			workLog.Error("Problem sending completed via cancellation message", "error", err)

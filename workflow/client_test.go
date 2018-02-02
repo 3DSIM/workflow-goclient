@@ -12,6 +12,7 @@ import (
 	"github.com/3dsim/workflow-goclient/models"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/mux"
+	log "github.com/inconshreveable/log15"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,10 +22,17 @@ const (
 	audience            = "test audience"
 )
 
+var logger log.Logger
+
+func init() {
+	logger = log.New()
+	logger.SetHandler(log.LvlFilterHandler(log.LvlDebug, log.CallerFileHandler(log.StdoutHandler)))
+}
+
 func TestNewClientExpectsClientReturned(t *testing.T) {
 	// arrange
 	// act
-	client := NewClient(nil, gatewayURL, workflowAPIBasePath, audience)
+	client := NewClient(nil, gatewayURL, workflowAPIBasePath, audience, logger)
 
 	// assert
 	assert.NotNil(t, client, "Expected new client to not be nil")
@@ -61,7 +69,7 @@ func TestWorkflow(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		workflow, err := client.Workflow(workflowID)
@@ -79,7 +87,7 @@ func TestWorkflow(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		workflow, err := client.Workflow(workflowID)
@@ -105,7 +113,7 @@ func TestWorkflow(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		workflow, err := client.Workflow(workflowID)
@@ -138,7 +146,7 @@ func TestCancelWorkflow(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		err := client.CancelWorkflow(workflowID)
@@ -152,7 +160,7 @@ func TestCancelWorkflow(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		err := client.CancelWorkflow(workflowID)
@@ -177,7 +185,7 @@ func TestCancelWorkflow(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		err := client.CancelWorkflow(workflowID)
@@ -222,7 +230,7 @@ func TestSignalWorkflow(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		err := client.SignalWorkflow(workflowID, signal)
@@ -236,7 +244,7 @@ func TestSignalWorkflow(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		err := client.SignalWorkflow(workflowID, nil)
@@ -261,7 +269,7 @@ func TestSignalWorkflow(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		err := client.SignalWorkflow(workflowID, &models.Signal{})
@@ -310,7 +318,7 @@ func TestUpdateActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.UpdateActivity(workflowID, activityToReturn)
@@ -332,7 +340,7 @@ func TestUpdateActivity(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.UpdateActivity(workflowID, activityToReturn)
@@ -358,7 +366,7 @@ func TestUpdateActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.UpdateActivity(workflowID, activityToReturn)
@@ -413,7 +421,7 @@ func TestUpdateActivityPercentComplete(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.UpdateActivityPercentComplete(workflowID, activityID, int(expectedActivity.PercentComplete))
@@ -432,7 +440,7 @@ func TestUpdateActivityPercentComplete(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.UpdateActivityPercentComplete(workflowID, activityID, 0)
@@ -458,7 +466,7 @@ func TestUpdateActivityPercentComplete(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.UpdateActivityPercentComplete(workflowID, activityID, 0)
@@ -519,7 +527,7 @@ func TestCompleteSuccessfulActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.CompleteSuccessfulActivity(workflowID, activityID, result)
@@ -539,7 +547,7 @@ func TestCompleteSuccessfulActivity(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.CompleteSuccessfulActivity(workflowID, activityID, nil)
@@ -565,7 +573,7 @@ func TestCompleteSuccessfulActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.CompleteSuccessfulActivity(workflowID, activityID, nil)
@@ -620,7 +628,7 @@ func TestCompleteCancelledActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.CompleteCancelledActivity(workflowID, activityID, expectedActivity.Error.Details)
@@ -639,7 +647,7 @@ func TestCompleteCancelledActivity(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.CompleteCancelledActivity(workflowID, activityID, "")
@@ -665,7 +673,7 @@ func TestCompleteCancelledActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.CompleteCancelledActivity(workflowID, activityID, "")
@@ -720,7 +728,7 @@ func TestCompleteFailedActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.CompleteFailedActivity(workflowID, activityID, *expectedActivity.Error.Reason, expectedActivity.Error.Details)
@@ -740,7 +748,7 @@ func TestCompleteFailedActivity(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.CompleteFailedActivity(workflowID, activityID, "", "")
@@ -766,7 +774,7 @@ func TestCompleteFailedActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		activity, err := client.CompleteFailedActivity(workflowID, activityID, "", "")
@@ -814,7 +822,7 @@ func TestHeartbeatActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		heartbeat, err := client.HeartbeatActivity(workflowID, activityID)
@@ -833,7 +841,7 @@ func TestHeartbeatActivity(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		heartbeat, err := client.HeartbeatActivity(workflowID, activityID)
@@ -858,7 +866,7 @@ func TestHeartbeatActivity(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		heartbeat, err := client.HeartbeatActivity(workflowID, activityID)
@@ -906,7 +914,7 @@ func TestHeartbeatActivityWithToken(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		heartbeat, err := client.HeartbeatActivityWithToken(taskToken, activityID, heartbeatDetails)
@@ -925,7 +933,7 @@ func TestHeartbeatActivityWithToken(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		heartbeat, err := client.HeartbeatActivityWithToken(taskToken, activityID, heartbeatDetails)
@@ -950,7 +958,7 @@ func TestHeartbeatActivityWithToken(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		heartbeat, err := client.HeartbeatActivityWithToken(taskToken, activityID, heartbeatDetails)
@@ -1004,7 +1012,7 @@ func TestStartWorkflow(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		returnedWorkflowID, err := client.StartWorkflow(post)
@@ -1019,7 +1027,7 @@ func TestStartWorkflow(t *testing.T) {
 		expectedError := errors.New("Some auth0 error")
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
 		fakeTokenFetcher.TokenReturns("", expectedError)
-		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
 		workflowID, err := client.StartWorkflow(post)
@@ -1044,7 +1052,7 @@ func TestStartWorkflow(t *testing.T) {
 		r.HandleFunc(endpoint, handler)
 		testServer := httptest.NewServer(r)
 		defer testServer.Close()
-		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience)
+		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
 		workflowID, err := client.StartWorkflow(post)

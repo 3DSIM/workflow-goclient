@@ -19,19 +19,6 @@ import (
 	log "github.com/inconshreveable/log15"
 )
 
-// Log is a github.com/inconshreveable/log15.Logger.  Log is exposed so that users of this library can set
-// their own log handler.  By default this Log uses the DiscardHandler, which discards log statements.
-// See: https://godoc.org/github.com/inconshreveable/log15#hdr-Library_Use
-//
-// To set a different log handler do something like this:
-//
-// 		Log.SetHandler(log.LvlFilterHandler(log.LvlInfo, log.CallerFileHandler(log.StdoutHandler)))
-var Log = log.New()
-
-func init() {
-	Log.SetHandler(log.DiscardHandler())
-}
-
 // Client is a wrapper around the generated client found in the "genclient" package.  It provides convenience methods
 // for common operations.  If the operation needed is not found in Client, use the "genclient" package using this client
 // as an example of how to utilize the genclient.  PRs are welcome if more functionality is wanted in this client package.
@@ -54,6 +41,7 @@ type client struct {
 	tokenFetcher auth0.TokenFetcher
 	client       *genclient.Workflow
 	audience     string
+	logger       log.Logger
 }
 
 // NewClient creates a client for interacting with the 3DSIM workflow api.  See the auth0 package for how to construct
@@ -69,28 +57,44 @@ type client struct {
 // 		Gov 	= https://workflow-gov.3dsim.com
 //
 // The apiBasePath is "/workflow-api".
-func NewClient(tokenFetcher auth0.TokenFetcher, apiGatewayURL, apiBasePath, audience string) Client {
-	return newClient(tokenFetcher, apiGatewayURL, apiBasePath, audience, nil, openapiclient.DefaultTimeout)
+//
+// logger is a github.com/inconshreveable/log15.Logger.  Log is exposed so that users of this client can pass
+// their own log handler.  If nil is passed, this logger will be initialized to use the DiscardHandler, which discards log statements.
+// See: https://godoc.org/github.com/inconshreveable/log15#hdr-Library_Use
+//
+func NewClient(tokenFetcher auth0.TokenFetcher, apiGatewayURL, apiBasePath, audience string, logger log.Logger) Client {
+	return newClient(tokenFetcher, apiGatewayURL, apiBasePath, audience, nil, openapiclient.DefaultTimeout, logger)
 }
 
 // NewClientWithRetry creates the same type of client as NewClient, but allows for retrying any temporary errors or
 // any responses with status >= 400 and < 600 for a specified amount of time.
-func NewClientWithRetry(tokenFetcher auth0.TokenFetcher, apiGatewayURL, apiBasePath, audience string, retryTimeout time.Duration) Client {
+//
+// See NewClient for more information
+func NewClientWithRetry(tokenFetcher auth0.TokenFetcher, apiGatewayURL, apiBasePath, audience string, retryTimeout time.Duration, logger log.Logger) Client {
 	tr := rehttp.NewTransport(
 		nil, // will use http.DefaultTransport
 		rehttp.RetryAny(rehttp.RetryStatusInterval(400, 600), rehttp.RetryTemporaryErr()),
 		rehttp.ExpJitterDelay(1*time.Second, retryTimeout),
 	)
-	return newClient(tokenFetcher, apiGatewayURL, apiBasePath, audience, tr, retryTimeout)
+	return newClient(tokenFetcher, apiGatewayURL, apiBasePath, audience, tr, retryTimeout, logger)
 }
 
 func newClient(tokenFetcher auth0.TokenFetcher, apiGatewayURL, apiBasePath, audience string,
-	roundTripper http.RoundTripper, defaultRequestTimeout time.Duration) Client {
+	roundTripper http.RoundTripper, defaultRequestTimeout time.Duration, logger log.Logger) Client {
+	if logger == nil {
+		logger = log.New()
+		logger.SetHandler(log.DiscardHandler())
+	}
+	if roundTripper == nil {
+		logger.Info("Creating workflow client with retry disabled")
+	} else {
+		logger.Info("Creating workflow client with retry enabled")
+	}
 
 	parsedURL, err := url.Parse(apiGatewayURL)
 	if err != nil {
 		message := "API Gateway URL was invalid!"
-		Log.Error(message, "apiGatewayURL", apiGatewayURL)
+		logger.Error(message, "apiGatewayURL", apiGatewayURL)
 		panic(message + " " + err.Error())
 	}
 
@@ -105,6 +109,7 @@ func newClient(tokenFetcher auth0.TokenFetcher, apiGatewayURL, apiBasePath, audi
 		tokenFetcher: tokenFetcher,
 		client:       workflowClient,
 		audience:     audience,
+		logger:       logger,
 	}
 }
 
@@ -114,9 +119,11 @@ func (c *client) StartWorkflow(workflow *models.PostWorkflow) (workflowID string
 	if err != nil {
 		return "", err
 	}
+	c.logger.Info("Starting workflow", "type", workflow.WorkflowType, "entityID", *workflow.EntityID)
 	params := operations.NewStartWorkflowParams().WithWorkflow(workflow)
 	response, err := c.client.Operations.StartWorkflow(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem starting workflow", "type", workflow.WorkflowType, "entityID", *workflow.EntityID, "error", err)
 		return "", err
 	}
 	return response.Payload, nil
@@ -127,9 +134,11 @@ func (c *client) Workflow(workflowID string) (workflow *models.Workflow, err err
 	if err != nil {
 		return nil, err
 	}
+	c.logger.Info("Getting workflow", "workflowID", workflowID)
 	params := operations.NewGetWorkflowParams().WithID(workflowID)
 	response, err := c.client.Operations.GetWorkflow(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem getting workflow", "workflowID", workflowID, "error", err)
 		return nil, err
 	}
 	return response.Payload, nil
@@ -140,9 +149,11 @@ func (c *client) CancelWorkflow(workflowID string) error {
 	if err != nil {
 		return err
 	}
+	c.logger.Info("Cancelling workflow", "workflowID", workflowID)
 	params := operations.NewCancelWorkflowParams().WithID(workflowID)
 	_, err = c.client.Operations.CancelWorkflow(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem cancelling workflow", "workflowID", workflowID, "error", err)
 		return err
 	}
 	return nil
@@ -153,9 +164,11 @@ func (c *client) SignalWorkflow(workflowID string, signal *models.Signal) error 
 	if err != nil {
 		return err
 	}
+	c.logger.Info("Signaling workflow", "workflowID", workflowID)
 	params := operations.NewSignalWorkflowParams().WithID(workflowID).WithSignal(signal)
 	_, err = c.client.Operations.SignalWorkflow(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem signaling workflow", "workflowID", workflowID, "error", err)
 		return err
 	}
 	return nil
@@ -166,9 +179,11 @@ func (c *client) UpdateActivity(workflowID string, activity *models.Activity) (*
 	if err != nil {
 		return nil, err
 	}
+	c.logger.Info("Updating activity", "workflowID", workflowID, "activityID", *activity.ID)
 	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(*activity.ID).WithActivity(activity)
 	response, err := c.client.Operations.UpdateActivity(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem updating activity", "workflowID", workflowID, "activityID", *activity.ID, "error", err)
 		return nil, err
 	}
 	return response.Payload, nil
@@ -184,9 +199,11 @@ func (c *client) UpdateActivityPercentComplete(workflowID, activityID string, pe
 		Status:          swag.String(models.ActivityStatusRunning),
 		PercentComplete: int32(percentComplete),
 	}
+	c.logger.Info("Updating activity percent complete", "workflowID", workflowID, "activityID", activityID, "percentComplete", percentComplete)
 	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(activityID).WithActivity(updatedActivity)
 	response, err := c.client.Operations.UpdateActivity(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem updating activity percent complete", "workflowID", workflowID, "activityID", activityID, "error", err)
 		return nil, err
 	}
 	return response.Payload, nil
@@ -207,9 +224,11 @@ func (c *client) CompleteSuccessfulActivity(workflowID, activityID string, resul
 		Result:          string(resultBytes),
 		PercentComplete: 100,
 	}
+	c.logger.Info("Completing successful activity", "workflowID", workflowID, "activityID", activityID, "result", result)
 	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(activityID).WithActivity(completedActivity)
 	response, err := c.client.Operations.UpdateActivity(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem completing successful activity", "workflowID", workflowID, "activityID", activityID, "error", err)
 		return nil, err
 	}
 	return response.Payload, nil
@@ -225,9 +244,11 @@ func (c *client) CompleteCancelledActivity(workflowID, activityID, details strin
 		Status: swag.String(models.ActivityStatusCancelled),
 		Error:  &models.ActivityError{Details: details},
 	}
+	c.logger.Info("Completing cancelled activity", "workflowID", workflowID, "activityID", activityID)
 	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(activityID).WithActivity(cancelledActivity)
 	response, err := c.client.Operations.UpdateActivity(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem completing cancelled activity", "workflowID", workflowID, "activityID", activityID, "error", err)
 		return nil, err
 	}
 	return response.Payload, nil
@@ -243,9 +264,11 @@ func (c *client) CompleteFailedActivity(workflowID, activityID, reason, details 
 		Status: swag.String(models.ActivityStatusFailed),
 		Error:  &models.ActivityError{Reason: swag.String(reason), Details: details},
 	}
+	c.logger.Info("Completing failed activity", "workflowID", workflowID, "activityID", activityID)
 	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(activityID).WithActivity(failedActivity)
 	response, err := c.client.Operations.UpdateActivity(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem completing failed activity", "workflowID", workflowID, "activityID", activityID, "error", err)
 		return nil, err
 	}
 	return response.Payload, nil
@@ -256,9 +279,11 @@ func (c *client) HeartbeatActivity(workflowID string, activityID string) (*model
 	if err != nil {
 		return nil, err
 	}
+	c.logger.Debug("Heartbeating activity", "workflowID", workflowID, "activityID", activityID)
 	params := operations.NewHeartbeatActivityParams().WithID(workflowID).WithActivityID(activityID)
 	response, err := c.client.Operations.HeartbeatActivity(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem heartbeating activity", "workflowID", workflowID, "activityID", activityID, "error", err)
 		return nil, err
 	}
 	return response.Payload, nil
@@ -275,9 +300,11 @@ func (c *client) HeartbeatActivityWithToken(taskToken, activityID, details strin
 		Details:    details,
 		Cancelled:  false,
 	}
+	c.logger.Debug("Heartbeating activity", "token", taskToken)
 	params := operations.NewHeartbeatParams().WithHeartbeat(heartbeat)
 	response, err := c.client.Operations.Heartbeat(params, openapiclient.BearerToken(token))
 	if err != nil {
+		c.logger.Error("Problem heartbeating activity", "token", taskToken, "error", err)
 		return nil, err
 	}
 	return response.Payload, nil
