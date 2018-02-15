@@ -125,10 +125,11 @@ func TestDoWhenCancellationRequestedExpectsCompleteCancelledActivityCalled(t *te
 	assert.Equal(t, activityID, actualActivityID, "Expected activityID passed to HeartbeatActivityWithToken")
 	assert.NotEmpty(t, taskToken, actualDetails, "Expected details passed to HeartbeatActivityWithToken to not be empty")
 	assert.Equal(t, 1, fakeWorkflowClient.CompleteCancelledActivityCallCount(), "Expected to call CompleteCancelledActivity once")
-	actualWorkflowID, actualActivityID, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
+	actualWorkflowID, actualActivityID, actualReason, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
 	assert.Equal(t, workflowID, actualWorkflowID, "Expected workflow ID passed to CompleteCancelledActivity")
 	assert.Equal(t, activityID, actualActivityID, "Expected activity ID passed to CompleteCancelledActivity")
 	assert.Equal(t, completedMessage, actualDetails, "Expected to pass details that the work finished")
+	assert.Equal(t, cancelledReason, actualReason, "Expected to pass reason for the cancellation")
 }
 
 func TestDoWhenCancellationRequestedAndFunctionErrorsExpectsCompleteCancelledActivityCalled(t *testing.T) {
@@ -162,10 +163,11 @@ func TestDoWhenCancellationRequestedAndFunctionErrorsExpectsCompleteCancelledAct
 	assert.Equal(t, activityID, actualActivityID, "Expected activityID passed to HeartbeatActivityWithToken")
 	assert.NotEmpty(t, taskToken, actualDetails, "Expected details passed to HeartbeatActivityWithToken to not be empty")
 	assert.Equal(t, 1, fakeWorkflowClient.CompleteCancelledActivityCallCount(), "Expected to call CompleteCancelledActivity once")
-	actualWorkflowID, actualActivityID, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
+	actualWorkflowID, actualActivityID, actualReason, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
 	assert.Equal(t, workflowID, actualWorkflowID, "Expected workflow ID passed to CompleteCancelledActivity")
 	assert.Equal(t, activityID, actualActivityID, "Expected activity ID passed to CompleteCancelledActivity")
 	assert.Equal(t, errMsg, actualDetails, "Expected to error details")
+	assert.Equal(t, cancelledReason, actualReason, "Expected to pass reason for the cancellation")
 }
 
 func TestDoWhenCancellationRequestedAndFunctionBlocksForeverExpectsCompleteCancelledActivityCalledAfterTimeout(t *testing.T) {
@@ -200,10 +202,11 @@ func TestDoWhenCancellationRequestedAndFunctionBlocksForeverExpectsCompleteCance
 	assert.Equal(t, activityID, actualActivityID, "Expected activityID passed to HeartbeatActivityWithToken")
 	assert.NotEmpty(t, taskToken, actualDetails, "Expected details passed to HeartbeatActivityWithToken to not be empty")
 	assert.Equal(t, 1, fakeWorkflowClient.CompleteCancelledActivityCallCount(), "Expected to call CompleteCancelledActivity once")
-	actualWorkflowID, actualActivityID, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
+	actualWorkflowID, actualActivityID, actualReason, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
 	assert.Equal(t, workflowID, actualWorkflowID, "Expected workflow ID passed to CompleteCancelledActivity")
 	assert.Equal(t, activityID, actualActivityID, "Expected activity ID passed to CompleteCancelledActivity")
 	assert.Equal(t, timeoutErrorMessage, actualDetails, "Expected to pass empty details")
+	assert.Equal(t, cancelledReason, actualReason, "Expected to pass reason for the cancellation")
 }
 
 func TestDoExpectsUpdateActivityPercentCompleteCalledWhenProgressIsMade(t *testing.T) {
