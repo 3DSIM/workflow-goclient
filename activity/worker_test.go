@@ -90,6 +90,11 @@ func TestDoExpectsHeartbeatActivityWithTokenCalled(t *testing.T) {
 
 func TestDoWhenCancellationRequestedExpectsCompleteCancelledActivityCalled(t *testing.T) {
 	// arrange
+
+	// This test sets up a worker that will heartbeat every 7 ms.  The heartbeat response is mocked out to return
+	// cancelled = true.  At that point the worker should close the context that was passed to the worker function and
+	// the worker function will return.  The worker function is setup to timeout after 30 ms if nothing has happened
+	// by then.
 	fakeWorkflowClient := &workflowfakes.FakeClient{}
 	worker := &Worker{WorkflowClient: fakeWorkflowClient, HeartbeatInterval: 7 * time.Millisecond, Logger: logger}
 	activityID := "activity id"
@@ -123,7 +128,7 @@ func TestDoWhenCancellationRequestedExpectsCompleteCancelledActivityCalled(t *te
 	actualWorkflowID, actualActivityID, actualDetails := fakeWorkflowClient.CompleteCancelledActivityArgsForCall(0)
 	assert.Equal(t, workflowID, actualWorkflowID, "Expected workflow ID passed to CompleteCancelledActivity")
 	assert.Equal(t, activityID, actualActivityID, "Expected activity ID passed to CompleteCancelledActivity")
-	assert.Equal(t, "", actualDetails, "Expected to pass empty details")
+	assert.Equal(t, completedMessage, actualDetails, "Expected to pass details that the work finished")
 }
 
 func TestDoWhenCancellationRequestedAndFunctionErrorsExpectsCompleteCancelledActivityCalled(t *testing.T) {

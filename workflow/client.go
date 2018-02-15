@@ -31,7 +31,7 @@ type Client interface {
 	UpdateActivity(workflowID string, activity *models.Activity) (*models.Activity, error)
 	UpdateActivityPercentComplete(workflowID, activityID string, percentComplete int) (*models.Activity, error)
 	CompleteSuccessfulActivity(workflowID, activityID string, result interface{}) (*models.Activity, error)
-	CompleteCancelledActivity(workflowID, activityID, details string) (*models.Activity, error)
+	CompleteCancelledActivity(workflowID, activityID, reason, details string) (*models.Activity, error)
 	CompleteFailedActivity(workflowID, activityID, reason, details string) (*models.Activity, error)
 	HeartbeatActivity(workflowID, activityID string) (*models.Heartbeat, error)
 	HeartbeatActivityWithToken(taskToken, activityID, details string) (*models.Heartbeat, error)
@@ -234,7 +234,9 @@ func (c *client) CompleteSuccessfulActivity(workflowID, activityID string, resul
 	return response.Payload, nil
 }
 
-func (c *client) CompleteCancelledActivity(workflowID, activityID, details string) (*models.Activity, error) {
+// CompleteCancelledActivity will sent an activity with a cancelled status to the workflow API.  workflowID, activityID,
+// and reason are required.
+func (c *client) CompleteCancelledActivity(workflowID, activityID, reason, details string) (*models.Activity, error) {
 	token, err := c.tokenFetcher.Token(c.audience)
 	if err != nil {
 		return nil, err
@@ -242,7 +244,7 @@ func (c *client) CompleteCancelledActivity(workflowID, activityID, details strin
 	cancelledActivity := &models.Activity{
 		ID:     swag.String(activityID),
 		Status: swag.String(models.ActivityStatusCancelled),
-		Error:  &models.ActivityError{Details: details},
+		Error:  &models.ActivityError{Reason: swag.String(reason), Details: details},
 	}
 	c.logger.Info("Completing cancelled activity", "workflowID", workflowID, "activityID", activityID)
 	params := operations.NewUpdateActivityParams().WithID(workflowID).WithActivityID(activityID).WithActivity(cancelledActivity)
