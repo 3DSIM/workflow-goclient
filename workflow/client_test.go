@@ -595,7 +595,7 @@ func TestCompleteCancelledActivity(t *testing.T) {
 		expectedActivity := &models.Activity{
 			ID:     swag.String(activityID),
 			Status: swag.String(models.ActivityStatusCancelled),
-			Error:  &models.ActivityError{Details: "some cancel details"},
+			Error:  &models.ActivityError{Reason: swag.String("some reason"), Details: "some cancel details"},
 		}
 		var actualActivity models.Activity
 		fakeTokenFetcher := &auth0fakes.FakeTokenFetcher{}
@@ -631,13 +631,14 @@ func TestCompleteCancelledActivity(t *testing.T) {
 		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
-		activity, err := client.CompleteCancelledActivity(workflowID, activityID, expectedActivity.Error.Details)
+		activity, err := client.CompleteCancelledActivity(workflowID, activityID, *expectedActivity.Error.Reason, expectedActivity.Error.Details)
 
 		// assert
 		assert.Equal(t, *expectedActivity.ID, *actualActivity.ID, "Expected activity IDs to match")
 		assert.Equal(t, models.ActivityStatusCancelled, *actualActivity.Status, "Expected activity status to be: "+models.ActivityStatusCancelled)
 		assert.NotNil(t, actualActivity.Error, "Expected an activity error")
 		assert.Equal(t, expectedActivity.Error.Details, actualActivity.Error.Details, "Expected error details to be passed in")
+		assert.Equal(t, *expectedActivity.Error.Reason, *actualActivity.Error.Reason, "Expected error reason to be passed in")
 		assert.Nil(t, err, "Expected no error")
 		assert.NotNil(t, activity, "Expected retrieved activity to not be nil")
 	})
@@ -650,7 +651,7 @@ func TestCompleteCancelledActivity(t *testing.T) {
 		client := NewClient(fakeTokenFetcher, gatewayURL, workflowAPIBasePath, audience, logger)
 
 		// act
-		activity, err := client.CompleteCancelledActivity(workflowID, activityID, "")
+		activity, err := client.CompleteCancelledActivity(workflowID, activityID, "", "")
 
 		// assert
 		assert.Nil(t, activity, "Expected no activity to be returned due to token error")
@@ -676,7 +677,7 @@ func TestCompleteCancelledActivity(t *testing.T) {
 		client := NewClient(fakeTokenFetcher, testServer.URL, workflowAPIBasePath, audience, logger)
 
 		// act
-		activity, err := client.CompleteCancelledActivity(workflowID, activityID, "")
+		activity, err := client.CompleteCancelledActivity(workflowID, activityID, "", "")
 
 		// assert
 		assert.Nil(t, activity, "Expected no activity to be returned due to API error")

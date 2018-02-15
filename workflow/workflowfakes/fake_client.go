@@ -102,11 +102,12 @@ type FakeClient struct {
 		result1 *models.Activity
 		result2 error
 	}
-	CompleteCancelledActivityStub        func(workflowID, activityID, details string) (*models.Activity, error)
+	CompleteCancelledActivityStub        func(workflowID, activityID, reason, details string) (*models.Activity, error)
 	completeCancelledActivityMutex       sync.RWMutex
 	completeCancelledActivityArgsForCall []struct {
 		workflowID string
 		activityID string
+		reason     string
 		details    string
 	}
 	completeCancelledActivityReturns struct {
@@ -523,18 +524,19 @@ func (fake *FakeClient) CompleteSuccessfulActivityReturnsOnCall(i int, result1 *
 	}{result1, result2}
 }
 
-func (fake *FakeClient) CompleteCancelledActivity(workflowID string, activityID string, details string) (*models.Activity, error) {
+func (fake *FakeClient) CompleteCancelledActivity(workflowID string, activityID string, reason string, details string) (*models.Activity, error) {
 	fake.completeCancelledActivityMutex.Lock()
 	ret, specificReturn := fake.completeCancelledActivityReturnsOnCall[len(fake.completeCancelledActivityArgsForCall)]
 	fake.completeCancelledActivityArgsForCall = append(fake.completeCancelledActivityArgsForCall, struct {
 		workflowID string
 		activityID string
+		reason     string
 		details    string
-	}{workflowID, activityID, details})
-	fake.recordInvocation("CompleteCancelledActivity", []interface{}{workflowID, activityID, details})
+	}{workflowID, activityID, reason, details})
+	fake.recordInvocation("CompleteCancelledActivity", []interface{}{workflowID, activityID, reason, details})
 	fake.completeCancelledActivityMutex.Unlock()
 	if fake.CompleteCancelledActivityStub != nil {
-		return fake.CompleteCancelledActivityStub(workflowID, activityID, details)
+		return fake.CompleteCancelledActivityStub(workflowID, activityID, reason, details)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -548,10 +550,10 @@ func (fake *FakeClient) CompleteCancelledActivityCallCount() int {
 	return len(fake.completeCancelledActivityArgsForCall)
 }
 
-func (fake *FakeClient) CompleteCancelledActivityArgsForCall(i int) (string, string, string) {
+func (fake *FakeClient) CompleteCancelledActivityArgsForCall(i int) (string, string, string, string) {
 	fake.completeCancelledActivityMutex.RLock()
 	defer fake.completeCancelledActivityMutex.RUnlock()
-	return fake.completeCancelledActivityArgsForCall[i].workflowID, fake.completeCancelledActivityArgsForCall[i].activityID, fake.completeCancelledActivityArgsForCall[i].details
+	return fake.completeCancelledActivityArgsForCall[i].workflowID, fake.completeCancelledActivityArgsForCall[i].activityID, fake.completeCancelledActivityArgsForCall[i].reason, fake.completeCancelledActivityArgsForCall[i].details
 }
 
 func (fake *FakeClient) CompleteCancelledActivityReturns(result1 *models.Activity, result2 error) {

@@ -13,6 +13,8 @@ const (
 	defaultHeartbeatInterval   = 1 * time.Minute
 	defaultCancellationTimeout = 1 * time.Minute
 	timeoutErrorMessage        = "Work cancelled after timeout"
+	completedMessage           = "Work completed successfully"
+	cancelledReason            = "Cancel requested"
 )
 
 // Worker handles executing work and reporting status and progress to the workflow API via the WorkflowClient field.
@@ -136,17 +138,17 @@ func (w *Worker) handleCancellation(workflowID, activityID string, workLog log.L
 	}
 	select {
 	case err := <-ec: // work completed with an error
-		_, err = w.WorkflowClient.CompleteCancelledActivity(workflowID, activityID, err.Error())
+		_, err = w.WorkflowClient.CompleteCancelledActivity(workflowID, activityID, cancelledReason, err.Error())
 		if err != nil {
 			workLog.Error("Problem sending completed via cancellation message", "error", err)
 		}
 	case <-rc: // work completed
-		_, err := w.WorkflowClient.CompleteCancelledActivity(workflowID, activityID, "")
+		_, err := w.WorkflowClient.CompleteCancelledActivity(workflowID, activityID, cancelledReason, completedMessage)
 		if err != nil {
 			workLog.Error("Problem sending completed via cancellation message", "error", err)
 		}
 	case <-time.After(cancellationTimeout): // Cancellation timed out
-		_, err := w.WorkflowClient.CompleteCancelledActivity(workflowID, activityID, timeoutErrorMessage)
+		_, err := w.WorkflowClient.CompleteCancelledActivity(workflowID, activityID, cancelledReason, timeoutErrorMessage)
 		if err != nil {
 			workLog.Error("Problem sending completed via cancellation message", "error", err)
 		}
