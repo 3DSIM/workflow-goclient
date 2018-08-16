@@ -29,29 +29,6 @@ func (_m *Client) StartWorkflow(_a0 *models.PostWorkflow) (string, error) {
 	return r0, r1
 }
 
-// Workflow provides a mock function with given fields: workflowID
-func (_m *Client) Workflow(workflowID string) (*models.Workflow, error) {
-	ret := _m.Called(workflowID)
-
-	var r0 *models.Workflow
-	if rf, ok := ret.Get(0).(func(string) *models.Workflow); ok {
-		r0 = rf(workflowID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*models.Workflow)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(workflowID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // CancelWorkflow provides a mock function with given fields: workflowID
 func (_m *Client) CancelWorkflow(workflowID string) error {
 	ret := _m.Called(workflowID)
@@ -59,20 +36,6 @@ func (_m *Client) CancelWorkflow(workflowID string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string) error); ok {
 		r0 = rf(workflowID)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// SignalWorkflow provides a mock function with given fields: workflowID, signal
-func (_m *Client) SignalWorkflow(workflowID string, signal *models.Signal) error {
-	ret := _m.Called(workflowID, signal)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, *models.Signal) error); ok {
-		r0 = rf(workflowID, signal)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -149,13 +112,13 @@ func (_m *Client) CompleteSuccessfulActivity(workflowID string, activityID strin
 	return r0, r1
 }
 
-// CompleteCancelledActivity provides a mock function with given fields: workflowID, activityID, details
-func (_m *Client) CompleteCancelledActivity(workflowID string, activityID string, details string) (*models.Activity, error) {
-	ret := _m.Called(workflowID, activityID, details)
+// CompleteCancelledActivity provides a mock function with given fields: workflowID, activityID, reason, details
+func (_m *Client) CompleteCancelledActivity(workflowID string, activityID string, reason string, details string) (*models.Activity, error) {
+	ret := _m.Called(workflowID, activityID, reason, details)
 
 	var r0 *models.Activity
-	if rf, ok := ret.Get(0).(func(string, string, string) *models.Activity); ok {
-		r0 = rf(workflowID, activityID, details)
+	if rf, ok := ret.Get(0).(func(string, string, string, string) *models.Activity); ok {
+		r0 = rf(workflowID, activityID, reason, details)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*models.Activity)
@@ -163,8 +126,8 @@ func (_m *Client) CompleteCancelledActivity(workflowID string, activityID string
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
-		r1 = rf(workflowID, activityID, details)
+	if rf, ok := ret.Get(1).(func(string, string, string, string) error); ok {
+		r1 = rf(workflowID, activityID, reason, details)
 	} else {
 		r1 = ret.Error(1)
 	}

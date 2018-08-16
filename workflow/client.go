@@ -25,9 +25,7 @@ import (
 type Client interface {
 	// StartWorkflow begins a new workflow and returns the workflow ID
 	StartWorkflow(*models.PostWorkflow) (string, error)
-	Workflow(workflowID string) (*models.Workflow, error)
 	CancelWorkflow(workflowID string) error
-	SignalWorkflow(workflowID string, signal *models.Signal) error
 	UpdateActivity(workflowID string, activity *models.Activity) (*models.Activity, error)
 	UpdateActivityPercentComplete(workflowID, activityID string, percentComplete int) (*models.Activity, error)
 	CompleteSuccessfulActivity(workflowID, activityID string, result interface{}) (*models.Activity, error)
@@ -129,21 +127,6 @@ func (c *client) StartWorkflow(workflow *models.PostWorkflow) (workflowID string
 	return response.Payload, nil
 }
 
-func (c *client) Workflow(workflowID string) (workflow *models.Workflow, err error) {
-	token, err := c.tokenFetcher.Token(c.audience)
-	if err != nil {
-		return nil, err
-	}
-	c.logger.Info("Getting workflow", "workflowID", workflowID)
-	params := operations.NewGetWorkflowParams().WithID(workflowID)
-	response, err := c.client.Operations.GetWorkflow(params, openapiclient.BearerToken(token))
-	if err != nil {
-		c.logger.Error("Problem getting workflow", "workflowID", workflowID, "error", err)
-		return nil, err
-	}
-	return response.Payload, nil
-}
-
 func (c *client) CancelWorkflow(workflowID string) error {
 	token, err := c.tokenFetcher.Token(c.audience)
 	if err != nil {
@@ -154,21 +137,6 @@ func (c *client) CancelWorkflow(workflowID string) error {
 	_, err = c.client.Operations.CancelWorkflow(params, openapiclient.BearerToken(token))
 	if err != nil {
 		c.logger.Error("Problem cancelling workflow", "workflowID", workflowID, "error", err)
-		return err
-	}
-	return nil
-}
-
-func (c *client) SignalWorkflow(workflowID string, signal *models.Signal) error {
-	token, err := c.tokenFetcher.Token(c.audience)
-	if err != nil {
-		return err
-	}
-	c.logger.Info("Signaling workflow", "workflowID", workflowID)
-	params := operations.NewSignalWorkflowParams().WithID(workflowID).WithSignal(signal)
-	_, err = c.client.Operations.SignalWorkflow(params, openapiclient.BearerToken(token))
-	if err != nil {
-		c.logger.Error("Problem signaling workflow", "workflowID", workflowID, "error", err)
 		return err
 	}
 	return nil
