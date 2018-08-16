@@ -22,19 +22,6 @@ type FakeClient struct {
 		result1 string
 		result2 error
 	}
-	WorkflowStub        func(workflowID string) (*models.Workflow, error)
-	workflowMutex       sync.RWMutex
-	workflowArgsForCall []struct {
-		workflowID string
-	}
-	workflowReturns struct {
-		result1 *models.Workflow
-		result2 error
-	}
-	workflowReturnsOnCall map[int]struct {
-		result1 *models.Workflow
-		result2 error
-	}
 	CancelWorkflowStub        func(workflowID string) error
 	cancelWorkflowMutex       sync.RWMutex
 	cancelWorkflowArgsForCall []struct {
@@ -44,18 +31,6 @@ type FakeClient struct {
 		result1 error
 	}
 	cancelWorkflowReturnsOnCall map[int]struct {
-		result1 error
-	}
-	SignalWorkflowStub        func(workflowID string, signal *models.Signal) error
-	signalWorkflowMutex       sync.RWMutex
-	signalWorkflowArgsForCall []struct {
-		workflowID string
-		signal     *models.Signal
-	}
-	signalWorkflowReturns struct {
-		result1 error
-	}
-	signalWorkflowReturnsOnCall map[int]struct {
 		result1 error
 	}
 	UpdateActivityStub        func(workflowID string, activity *models.Activity) (*models.Activity, error)
@@ -218,57 +193,6 @@ func (fake *FakeClient) StartWorkflowReturnsOnCall(i int, result1 string, result
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Workflow(workflowID string) (*models.Workflow, error) {
-	fake.workflowMutex.Lock()
-	ret, specificReturn := fake.workflowReturnsOnCall[len(fake.workflowArgsForCall)]
-	fake.workflowArgsForCall = append(fake.workflowArgsForCall, struct {
-		workflowID string
-	}{workflowID})
-	fake.recordInvocation("Workflow", []interface{}{workflowID})
-	fake.workflowMutex.Unlock()
-	if fake.WorkflowStub != nil {
-		return fake.WorkflowStub(workflowID)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.workflowReturns.result1, fake.workflowReturns.result2
-}
-
-func (fake *FakeClient) WorkflowCallCount() int {
-	fake.workflowMutex.RLock()
-	defer fake.workflowMutex.RUnlock()
-	return len(fake.workflowArgsForCall)
-}
-
-func (fake *FakeClient) WorkflowArgsForCall(i int) string {
-	fake.workflowMutex.RLock()
-	defer fake.workflowMutex.RUnlock()
-	return fake.workflowArgsForCall[i].workflowID
-}
-
-func (fake *FakeClient) WorkflowReturns(result1 *models.Workflow, result2 error) {
-	fake.WorkflowStub = nil
-	fake.workflowReturns = struct {
-		result1 *models.Workflow
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeClient) WorkflowReturnsOnCall(i int, result1 *models.Workflow, result2 error) {
-	fake.WorkflowStub = nil
-	if fake.workflowReturnsOnCall == nil {
-		fake.workflowReturnsOnCall = make(map[int]struct {
-			result1 *models.Workflow
-			result2 error
-		})
-	}
-	fake.workflowReturnsOnCall[i] = struct {
-		result1 *models.Workflow
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *FakeClient) CancelWorkflow(workflowID string) error {
 	fake.cancelWorkflowMutex.Lock()
 	ret, specificReturn := fake.cancelWorkflowReturnsOnCall[len(fake.cancelWorkflowArgsForCall)]
@@ -313,55 +237,6 @@ func (fake *FakeClient) CancelWorkflowReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.cancelWorkflowReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) SignalWorkflow(workflowID string, signal *models.Signal) error {
-	fake.signalWorkflowMutex.Lock()
-	ret, specificReturn := fake.signalWorkflowReturnsOnCall[len(fake.signalWorkflowArgsForCall)]
-	fake.signalWorkflowArgsForCall = append(fake.signalWorkflowArgsForCall, struct {
-		workflowID string
-		signal     *models.Signal
-	}{workflowID, signal})
-	fake.recordInvocation("SignalWorkflow", []interface{}{workflowID, signal})
-	fake.signalWorkflowMutex.Unlock()
-	if fake.SignalWorkflowStub != nil {
-		return fake.SignalWorkflowStub(workflowID, signal)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.signalWorkflowReturns.result1
-}
-
-func (fake *FakeClient) SignalWorkflowCallCount() int {
-	fake.signalWorkflowMutex.RLock()
-	defer fake.signalWorkflowMutex.RUnlock()
-	return len(fake.signalWorkflowArgsForCall)
-}
-
-func (fake *FakeClient) SignalWorkflowArgsForCall(i int) (string, *models.Signal) {
-	fake.signalWorkflowMutex.RLock()
-	defer fake.signalWorkflowMutex.RUnlock()
-	return fake.signalWorkflowArgsForCall[i].workflowID, fake.signalWorkflowArgsForCall[i].signal
-}
-
-func (fake *FakeClient) SignalWorkflowReturns(result1 error) {
-	fake.SignalWorkflowStub = nil
-	fake.signalWorkflowReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) SignalWorkflowReturnsOnCall(i int, result1 error) {
-	fake.SignalWorkflowStub = nil
-	if fake.signalWorkflowReturnsOnCall == nil {
-		fake.signalWorkflowReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.signalWorkflowReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -742,12 +617,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.startWorkflowMutex.RLock()
 	defer fake.startWorkflowMutex.RUnlock()
-	fake.workflowMutex.RLock()
-	defer fake.workflowMutex.RUnlock()
 	fake.cancelWorkflowMutex.RLock()
 	defer fake.cancelWorkflowMutex.RUnlock()
-	fake.signalWorkflowMutex.RLock()
-	defer fake.signalWorkflowMutex.RUnlock()
 	fake.updateActivityMutex.RLock()
 	defer fake.updateActivityMutex.RUnlock()
 	fake.updateActivityPercentCompleteMutex.RLock()
