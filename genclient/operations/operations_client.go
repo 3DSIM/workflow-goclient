@@ -54,36 +54,7 @@ func (a *Client) CancelWorkflow(params *CancelWorkflowParams, authInfo runtime.C
 }
 
 /*
-GetWorkflow Get a workflow by id
-*/
-func (a *Client) GetWorkflow(params *GetWorkflowParams, authInfo runtime.ClientAuthInfoWriter) (*GetWorkflowOK, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewGetWorkflowParams()
-	}
-
-	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "getWorkflow",
-		Method:             "GET",
-		PathPattern:        "/workflows/{id}",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http"},
-		Params:             params,
-		Reader:             &GetWorkflowReader{formats: a.formats},
-		AuthInfo:           authInfo,
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result.(*GetWorkflowOK), nil
-
-}
-
-/*
-Heartbeat Signal workflow that activity is still running
+Heartbeat Send a heartbeat to the workflow api to let it know that the activity is still running
 */
 func (a *Client) Heartbeat(params *HeartbeatParams, authInfo runtime.ClientAuthInfoWriter) (*HeartbeatOK, error) {
 	// TODO: Validate the params before sending
@@ -137,35 +108,6 @@ func (a *Client) HeartbeatActivity(params *HeartbeatActivityParams, authInfo run
 		return nil, err
 	}
 	return result.(*HeartbeatActivityOK), nil
-
-}
-
-/*
-SignalWorkflow Signal a workflow with the given id
-*/
-func (a *Client) SignalWorkflow(params *SignalWorkflowParams, authInfo runtime.ClientAuthInfoWriter) (*SignalWorkflowOK, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewSignalWorkflowParams()
-	}
-
-	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "signalWorkflow",
-		Method:             "POST",
-		PathPattern:        "/workflows/{id}/signals",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http"},
-		Params:             params,
-		Reader:             &SignalWorkflowReader{formats: a.formats},
-		AuthInfo:           authInfo,
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result.(*SignalWorkflowOK), nil
 
 }
 

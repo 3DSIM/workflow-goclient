@@ -19,6 +19,9 @@ import (
 // swagger:model postWorkflow
 type PostWorkflow struct {
 
+	// the serialized JSON represnetation of the dynamic workflow graph
+	DynamicWorkflowGraph *DynamicWorkflow `json:"dynamicWorkflowGraph,omitempty"`
+
 	// Identifier for simulation, part or buildfile depending on workflow type
 	// Required: true
 	EntityID *int32 `json:"entityId"`
@@ -29,6 +32,9 @@ type PostWorkflow struct {
 
 	// True if distortion compensation needs to be performed
 	RunDistortionCompensation bool `json:"runDistortionCompensation,omitempty"`
+
+	// True if distortion compensation (after cutoff) needs to be performed
+	RunDistortionCompensationAfterCutoff bool `json:"runDistortionCompensationAfterCutoff,omitempty"`
 
 	// True if support optimization needs to be performed
 	RunSupportOptimization bool `json:"runSupportOptimization,omitempty"`
@@ -41,6 +47,11 @@ type PostWorkflow struct {
 // Validate validates this post workflow
 func (m *PostWorkflow) Validate(formats strfmt.Registry) error {
 	var res []error
+
+	if err := m.validateDynamicWorkflowGraph(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
 
 	if err := m.validateEntityID(formats); err != nil {
 		// prop
@@ -60,6 +71,25 @@ func (m *PostWorkflow) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *PostWorkflow) validateDynamicWorkflowGraph(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.DynamicWorkflowGraph) { // not required
+		return nil
+	}
+
+	if m.DynamicWorkflowGraph != nil {
+
+		if err := m.DynamicWorkflowGraph.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("dynamicWorkflowGraph")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -85,7 +115,7 @@ var postWorkflowTypeWorkflowTypePropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["AssumedStrain","Part","BuildFile"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["AssumedStrain","Part","BuildFile","ScanPattern","ThermalStrain","Thermal","SingleBead","Porosity","PartSupport","Dynamic"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -100,6 +130,20 @@ const (
 	PostWorkflowWorkflowTypePart string = "Part"
 	// PostWorkflowWorkflowTypeBuildFile captures enum value "BuildFile"
 	PostWorkflowWorkflowTypeBuildFile string = "BuildFile"
+	// PostWorkflowWorkflowTypeScanPattern captures enum value "ScanPattern"
+	PostWorkflowWorkflowTypeScanPattern string = "ScanPattern"
+	// PostWorkflowWorkflowTypeThermalStrain captures enum value "ThermalStrain"
+	PostWorkflowWorkflowTypeThermalStrain string = "ThermalStrain"
+	// PostWorkflowWorkflowTypeThermal captures enum value "Thermal"
+	PostWorkflowWorkflowTypeThermal string = "Thermal"
+	// PostWorkflowWorkflowTypeSingleBead captures enum value "SingleBead"
+	PostWorkflowWorkflowTypeSingleBead string = "SingleBead"
+	// PostWorkflowWorkflowTypePorosity captures enum value "Porosity"
+	PostWorkflowWorkflowTypePorosity string = "Porosity"
+	// PostWorkflowWorkflowTypePartSupport captures enum value "PartSupport"
+	PostWorkflowWorkflowTypePartSupport string = "PartSupport"
+	// PostWorkflowWorkflowTypeDynamic captures enum value "Dynamic"
+	PostWorkflowWorkflowTypeDynamic string = "Dynamic"
 )
 
 // prop value enum
