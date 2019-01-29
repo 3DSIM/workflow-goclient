@@ -115,7 +115,7 @@ var postWorkflowTypeWorkflowTypePropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["AssumedStrain","Part","BuildFile","ScanPattern","ThermalStrain","Thermal","SingleBead","Porosity","PartSupport","Dynamic"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["AssumedStrain","Part","BuildFile","ScanPattern","ThermalStrain","Thermal","SingleBead","Porosity","PartSupport","Dynamic","Microstructure"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -144,6 +144,8 @@ const (
 	PostWorkflowWorkflowTypePartSupport string = "PartSupport"
 	// PostWorkflowWorkflowTypeDynamic captures enum value "Dynamic"
 	PostWorkflowWorkflowTypeDynamic string = "Dynamic"
+	// PostWorkflowWorkflowTypeMicrostructure captures enum value "Microstructure"
+	PostWorkflowWorkflowTypeMicrostructure string = "Microstructure"
 )
 
 // prop value enum
